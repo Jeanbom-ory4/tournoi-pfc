@@ -18,7 +18,7 @@ const hash = (s) => crypto.createHash('sha256').update(s + SECRET).digest('hex')
 const sign = (id) => id + '.' + crypto.createHmac('sha256', SECRET).update(id).digest('hex').slice(0, 32);
 const who = (t) => { const id = String(t || '').split('.')[0]; return id && sign(id) === t ? id : null; };
 const isAdmin = (k) => !!ADMIN && String(k || '').trim() === ADMIN.trim();
-const ids = (cfg) => { const o = []; for (let r = 0; r < cfg.rounds; r++) for (let i = 0; i < cfg.size / 2 ** (r + 1); i++) o.push(mk(r, i)); return o; };
+const ids = (cfg) => { const o = []; for (let r = 0; r < cfg.rounds; r++) for (let i = 0; i < cfg.size / 2 ** (r + 1); i++) o.push(mk(r, i)); if (cfg.rounds >= 2) o.push('third'); return o; };
 
 async function load() {
   const cfg = await redis.get('pfc:cfg');
@@ -47,12 +47,20 @@ async function finish(cfg, m, win, ff) {
   await cancelMail(m.rem);
   m.w = win; m.pend = null; m.due = null; m.rem = null;
   if (ff) m.ff = ff;
-  if (m.r + 1 < cfg.rounds) {
+  if (m.r + 1 < cfg.rounds && m.id !== 'third') {
     const nk = 'pfc:m:' + mk(m.r + 1, m.i >> 1), nm = await redis.get(nk);
     nm[m.i % 2 ? 'b' : 'a'] = win;
     await redis.set(nk, nm);
   }
-  await redis.set('pfc:m:' + mk(m.r, m.i), m);
+  // Le perdant d'une demi-finale rejoint la petite finale (sauf s'il est éliminé pour dépassement de délai)
+  if (cfg.rounds >= 2 && m.id !== 'third' && m.r === cfg.rounds - 2) {
+    const loser = win === m.a ? m.b : m.a, tk = 'pfc:m:third', t = await redis.get(tk);
+    t[m.i % 2 ? 'b' : 'a'] = ff ? null : loser;
+    t.got = (t.got || 0) + 1;
+    if (t.got >= 2 && (!t.a || !t.b) && !t.w) t.w = t.a || t.b || 'none'; // un seul demi-finaliste : 3e place d'office
+    await redis.set(tk, t);
+  }
+  await redis.set('pfc:m:' + (m.id || mk(m.r, m.i)), m);
 }
 // Applique les éliminations dont le délai est dépassé (appelé à chaque lecture de l'état et à chaque coup)
 async function sweep(st) {
@@ -103,7 +111,7 @@ module.exports = async (req, res) => {
   try {
     const b = req.body || {}, a = b.action;
     if (!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) || !(process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN))
-      return res.status(500).json({ error: 'Redis non configuré : ajoutez une base Upstash Redis au projet Vercel puis redéployez.' });
+      return res.status(500).json({ error: 'Redis non configuré : ajoute une base Upstash Redis au projet Vercel puis redéploie.' });
     if (a === 'state') return res.json(out(await sweep(await load())));
 
     if (a === 'login') {
@@ -133,7 +141,7 @@ module.exports = async (req, res) => {
         m.hist.push({ a: ma, b: mb, w });
         m.pend = null;
         await cancelMail(m.rem); m.rem = null; m.due = null;
-        const win = m.sa >= 3 ? m.a : m.sb >= 3 ? m.b : null;
+        const need = m.need || 3, win = m.sa >= need ? m.a : m.sb >= need ? m.b : null;
         if (win) await finish(cfg, m, win, null); else await redis.set(key, m);
       }
       return res.json(out(await load()));
@@ -141,7 +149,7 @@ module.exports = async (req, res) => {
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
     if (['create', 'reset', 'admin', 'extend', 'forfeit'].includes(a)) {
-      if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifiez son nom exact, cochez Production, puis redéployez.' });
+      if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'extend' || a === 'forfeit') {
         const cfg = await redis.get('pfc:cfg'), key = 'pfc:m:' + b.id, m = await redis.get(key);
@@ -178,10 +186,11 @@ module.exports = async (req, res) => {
       players.forEach((p, k) => { slots[k < size / 2 ? 2 * k : 2 * (k - size / 2) + 1] = p.id; });
       const M = {};
       for (let r = 0; r < rounds; r++) for (let i = 0; i < size / 2 ** (r + 1); i++)
-        M[mk(r, i)] = { r, i, a: r ? null : slots[2 * i], b: r ? null : slots[2 * i + 1], sa: 0, sb: 0, hist: [], pend: null, w: null };
+        M[mk(r, i)] = { id: mk(r, i), r, i, a: r ? null : slots[2 * i], b: r ? null : slots[2 * i + 1], sa: 0, sb: 0, hist: [], pend: null, w: null, need: r === rounds - 1 ? 5 : 3 };
+      if (rounds >= 2) M.third = { id: 'third', r: rounds - 1, i: 0, a: null, b: null, sa: 0, sb: 0, hist: [], pend: null, w: null, need: 3, got: 0 };
       for (let i = 0; i < size / 2; i++) {
         const m = M[mk(0, i)];
-        if (!m.a || !m.b) { m.w = m.a || m.b; if (rounds > 1) M[mk(1, i >> 1)][i % 2 ? 'b' : 'a'] = m.w; }
+        if (!m.a || !m.b) { m.w = m.a || m.b; if (rounds > 1) M[mk(1, i >> 1)][i % 2 ? 'b' : 'a'] = m.w; if (rounds === 2) M.third.got++; }
       }
       await Promise.all([
         redis.set('pfc:cfg', { players, rounds, size }), redis.set('pfc:pins', pins), redis.set('pfc:emails', emails),
