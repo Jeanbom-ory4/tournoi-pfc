@@ -20,7 +20,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',skew=0;
-$('#ttl').innerHTML=STONE+' 📄 ✂️ Tournoi';
+$('#ttl').innerHTML=STONE+' 📄 ✂️ Tournoi RSP-ORY4';
 
 async function api(action,extra){
   const r=await fetch('/api/pfc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:tok,key:adminKey,...extra})});
