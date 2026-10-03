@@ -36,19 +36,33 @@ async function wipe() {
 }
 async function mail(req, cfg, m, from, to) {
   const em = ((await redis.get('pfc:emails')) || {})[to];
-  if (!em || !process.env.RESEND_API_KEY) return;
+  const brevo = process.env.BREVO_API_KEY, resend = process.env.RESEND_API_KEY;
+  if (!em || !(brevo || resend)) return;
   const name = (id) => cfg.players.find((p) => p.id === id).name;
   const link = process.env.APP_URL || `https://${req.headers.host}`;
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: process.env.MAIL_FROM || 'Tournoi PFC <onboarding@resend.dev>',
-      to: [em],
-      subject: "Tournoi PFC — C'est ton tour de jouer !",
-      text: `Bonjour ${name(to)}, ${name(from)} a joué son coup ! Clique sur ce lien pour jouer ton tour : ${link}`,
-    }),
-  }).catch(() => {});
+  const subject = "Tournoi PFC — C'est ton tour de jouer !";
+  const text = `Bonjour ${name(to)}, ${name(from)} a joué son coup ! Clique sur ce lien pour jouer ton tour : ${link}`;
+  try {
+    let r;
+    if (brevo) {
+      // Brevo : pas de domaine requis, seulement une adresse expéditrice vérifiée (MAIL_FROM_EMAIL)
+      r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': brevo, 'Content-Type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          sender: { name: process.env.MAIL_FROM_NAME || 'Tournoi PFC', email: process.env.MAIL_FROM_EMAIL },
+          to: [{ email: em }], subject, textContent: text,
+        }),
+      });
+    } else {
+      r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + resend, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: process.env.MAIL_FROM || 'Tournoi PFC <onboarding@resend.dev>', to: [em], subject, text }),
+      });
+    }
+    if (!r.ok) console.error('Envoi e-mail refusé', r.status, await r.text());
+  } catch (e) { console.error('Envoi e-mail impossible', e.message); }
 }
 
 module.exports = async (req, res) => {
