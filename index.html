@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Master Chifoumi — Édition RSP 2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg1:#2e1065;--bg2:#be185d;--card:rgba(255,255,255,.14)}
+body{margin:0;min-height:100vh;color:#fff;background:linear-gradient(160deg,var(--bg1),var(--bg2)) fixed;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.card{background:var(--card);backdrop-filter:blur(8px);border-radius:1.25rem}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pop{animation:pp .5s}@keyframes pp{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+button{touch-action:manipulation}
+</style></head>
+<body><div class="max-w-md mx-auto p-3"><h1 id="ttl" class="text-center text-2xl font-black py-2"></h1><div id="app"></div></div>
+<script>
+const STONE='<svg viewBox="2 7 60 52" width="1.3em" height="1.13em" style="display:inline-block;vertical-align:-.2em" aria-label="Pierre"><path d="M9 45C5 34 11 22 21 18C27 11 40 11 46 18C56 22 61 34 56 45C54 53 44 55 32 55C20 55 11 53 9 45Z" fill="#9ca3af" stroke="#4b5563" stroke-width="3" stroke-linejoin="round"/><path d="M10 45C12 51 20 55 32 55C44 55 54 52 56 45C50 49 40 50 31 49C21 48 14 47 10 45Z" fill="#6b7280"/><path d="M19 27C23 20 31 18 38 19C32 21 27 24 25 31Z" fill="#e5e7eb"/><path d="M40 25L35 34L42 39" fill="none" stroke="#4b5563" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const E={r:STONE,f:'📄',c:'✂️'},N={r:'Pierre',f:'Feuille',c:'Ciseaux'};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',skew=0,watch=null;
+$('#ttl').innerHTML='<div>'+STONE+' 📄 ✂️</div><div class="text-lg mt-1">Master Chifoumi — Édition RSP 2026</div>';
+
+async function api(action,extra){
+  const r=await fetch('/api/pfc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:tok,key:adminKey,...extra})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw Object.assign(new Error(j.error||'erreur'),{status:r.status});
+  return j;
+}
+const me=()=>tok?tok.split('.')[0]:null;
+const pn=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?esc(p.name):null};
+const raw=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?p.name:'?'};
+const mk=(r,i)=>`m${r}_${i}`;
+const rlabel=r=>{const k=S.cfg.rounds-r;return k===1?'Finale':k===2?'Demi-finales':k===3?'Quarts de finale':'Tour '+(r+1)};
+const mlabel=m=>m.id==='third'?'Petite finale (3e place)':rlabel(m.r);
+const wrap=h=>`<div class="card p-4 mb-3">${h}</div>`;
+const now=()=>Date.now()+skew;
+function norm(j){if(j&&j.now){skew=j.now-Date.now();delete j.now}return j}
+const loadState=async()=>norm(await api('state'));
+const cd=ms=>{if(ms<=0)return 'délai dépassé';const h=Math.floor(ms/3.6e6),mn=Math.floor(ms%3.6e6/6e4);return h+' h '+String(mn).padStart(2,'0')};
+setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.dataset.cd-now();el.textContent=cd(d);if(d<=0&&!document.hidden)refresh()}),30000);
+
+async function refresh(){
+  const f=document.activeElement;
+  if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
+  try{S=await loadState();loadErr=null}catch(e){loadErr=e.message+(e.status?' (HTTP '+e.status+')':'')}
+  loaded=true;
+  if(adminKey&&tab==='admin'){try{adm=await api('admin')}catch(e){if(e.status===401){adminKey='';ls.del('pfc_ak')}}}
+  if(tok&&S.cfg&&!pn(me())){tok=null;ls.del('pfc_tok')}
+  const sig=JSON.stringify([S,loadErr,adm,tok,loaded]);
+  if(sig===lastSig)return;   // rien n'a changé : on ne redessine pas
+  lastSig=sig;render();
+}
+setInterval(()=>{if(!document.hidden)refresh()},5000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+refresh();
+
+function render(){
+  const app=$('#app'),hadFocus=document.activeElement&&document.activeElement.id==='pin';
+  if(!loaded){app.innerHTML=wrap('<p class="text-center">Chargement…</p>');return}
+  const tabs=[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
+  const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' 🔴':''}</button>`).join('')}</div>`;
+  const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
+  app.innerHTML=nav+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
+  if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
+  if(tab==='admin')drawQR();
+  notifyCheck();
+}
+function setTab(t){tab=t;watch=null;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render()}
+
+/* ---------- Joueur ---------- */
+function myMatch(){
+  const id=me();
+  return Object.entries(S.matches).map(([k,m])=>({id:k,...m})).filter(m=>(m.a===id||m.b===id)&&m.a&&m.b).sort((x,y)=>x.r-y.r).find(m=>!m.w)||null;
+}
+function jeuView(){
+  if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
+  const id=me();
+  if(!id)return loginView();
+  let head=`<div class="flex justify-between items-center mb-3"><span class="font-bold">👋 ${pn(id)}</span><button onclick="logout()" class="text-sm underline opacity-80">Changer de joueur</button></div>`;
+  if(window.Notification&&Notification.permission==='default')head+=`<button onclick="askNotif()" class="w-full mb-3 py-2 rounded-xl card text-sm font-bold">🔔 Activer les alertes</button>`;
+  const m=myMatch();
+  if(!m){
+    const fin=S.matches[mk(S.cfg.rounds-1,0)];
+    if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p>');
+    const th=S.matches.third;
+    if(th&&(th.a===id||th.b===id)){
+      if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>':'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'));
+      return wrap(head+'<p class="text-center font-bold">⏳ En attente de l\'adversaire de la petite finale…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>');
+    }
+    if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>');
+    if(fin&&fin.w)return wrap(head+`<p class="text-center font-bold">Le tournoi est terminé.</p><p class="text-center mt-2">🏆 Vainqueur : ${pn(fin.w)}</p>`);
+    const ffm=Object.values(S.matches).find(x=>x.ff===id);
+    if(ffm)return wrap(head+'<p class="text-center font-bold">⏱ Délai dépassé : tu as été éliminé(e).</p><p class="text-center mt-2 text-sm">Tu n\'as pas joué dans les '+S.cfg.hours+' h. Suis la suite dans l\'onglet Tableau.</p>');
+    const lost=Object.values(S.matches).some(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id);
+    return wrap(head+(lost?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
+  }
+  const side=m.a===id?'a':'b',o=side==='a'?'b':'a',opp=m[o],mine=m['s'+side],theirs=m['s'+o];
+  const locked=m.pend&&m.pend.by===side;
+  const score=`<div class="text-center"><div class="text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div><div class="text-5xl font-black my-2">${mine} - ${theirs}</div><div class="font-semibold">Toi vs ${pn(opp)}</div></div>`;
+  let status,act='';
+  if(locked)status=`<div class="mt-4 p-3 rounded-2xl bg-yellow-400 text-yellow-950 font-bold text-center">🔒 Coup verrouillé. En attente du coup de ${pn(opp)}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ ${pn(opp)} doit jouer avant d'être éliminé(e) : reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`;
+  else{
+    status=`<div class="mt-4 p-3 rounded-2xl bg-emerald-400 text-emerald-950 font-bold text-center text-lg">À ton tour de jouer !${m.due?`<div class="text-sm font-semibold mt-1">⏱ Il te reste <span data-cd="${m.due}">${cd(m.due-now())}</span> pour jouer, sinon tu seras éliminé(e).</div>`:''}</div>`;
+    act=`<div class="grid grid-cols-3 gap-2 mt-3">${['r','f','c'].map(k=>`<button onclick="sel='${k}';render()" class="rounded-2xl py-5 flex flex-col items-center gap-1 font-bold border-4 ${sel===k?'bg-white text-purple-800 border-yellow-300 scale-105':'card border-transparent'}"><span class="text-5xl">${E[k]}</span><span class="text-sm">${N[k]}</span></button>`).join('')}</div>
+    <button ${sel&&!busy?'':'disabled'} onclick="play('${m.id}')" class="w-full mt-3 py-4 rounded-2xl font-black text-lg ${sel?'bg-yellow-300 text-yellow-950':'bg-white/20 text-white/60'}">${busy?'Envoi…':'Valider mon coup 🔒'}</button>
+    <p class="text-xs text-center mt-2 opacity-80">Une fois validé, le coup ne peut plus être changé.</p>`;
+  }
+  let last='';
+  if(m.hist&&m.hist.length){
+    const h=m.hist[m.hist.length-1],r=h.w==='='?['🤝 Égalité, on rejoue','bg-slate-500']:h.w===side?['🎉 Tour gagné !','bg-emerald-500']:['😬 Tour perdu','bg-rose-500'];
+    last=`<div class="mt-4 p-3 rounded-2xl ${r[1]} text-center pop"><div class="text-xs opacity-90">Dernier tour révélé</div><div class="text-4xl my-1">${E[h[side]]} <span class="text-xl">vs</span> ${E[h[o]]}</div><div class="font-bold">${r[0]}</div></div>
+    <div class="mt-3 flex flex-wrap gap-1 justify-center text-sm">${m.hist.map((x,i)=>`<span class="px-2 py-1 rounded-full bg-white/15">${i+1}. ${E[x[side]]}${E[x[o]]} ${x.w==='='?'=':x.w===side?'✅':'❌'}</span>`).join('')}</div>`;
+  }
+  return wrap(head+score+status+act+last);
+}
+function loginView(){
+  if(!lg.id)return wrap(`<p class="font-bold text-center mb-3">Qui es-tu ?</p><div class="grid grid-cols-2 gap-2">${[...S.cfg.players].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(p=>`<button onclick="lg={id:'${p.id}',pin:'',err:false};render()" class="card py-4 px-2 font-bold truncate">${esc(p.name)}</button>`).join('')}</div>`);
+  return wrap(`<p class="font-bold text-center">${pn(lg.id)}</p><p class="text-center text-sm mb-3 opacity-80">Saisis ton code à 4 caractères (lettres et chiffres)</p>
+  <input id="pin" value="${lg.pin}" maxlength="4" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" oninput="pinIn(this)" placeholder="••••" class="block mx-auto w-48 text-center text-3xl font-black uppercase rounded-xl p-3 text-slate-900 ${lg.err?'shake':''}" style="letter-spacing:.35em">
+  <p class="text-center text-sm h-5 mt-2 text-yellow-200">${lg.err?'Code incorrect':''}</p>
+  <label class="flex items-center justify-center gap-2 text-sm my-2"><input type="checkbox" ${remember?'checked':''} onchange="remember=this.checked" class="w-5 h-5"> Mémoriser ma connexion</label>
+  <button onclick="lg={id:null,pin:'',err:false};render()" class="block mx-auto mt-2 text-sm underline opacity-80">← Retour</button>`);
+}
+async function pinIn(el){
+  lg.pin=el.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);el.value=lg.pin;lg.err=false;
+  if(lg.pin.length<4)return;
+  try{const j=await api('login',{id:lg.id,pin:lg.pin});tok=j.token;if(remember)ls.set('pfc_tok',tok);else ls.del('pfc_tok');lg={id:null,pin:'',err:false};sel=null;prevTurn=null}
+  catch(e){lg.pin='';lg.err=true}
+  render();
+}
+function logout(){tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
+async function play(id){
+  if(!sel||busy)return;busy=true;render();
+  try{S=norm(await api('play',{id,mv:sel}));sel=null}catch(e){alert(e.message==='deadline'?'Le délai est dépassé : tu es éliminé(e) de ce match.':'Erreur, réessaie.');refresh()}
+  busy=false;render();
+}
+
+/* ---------- Alertes (page ouverte) ---------- */
+function myTurn(){if(!S.cfg||!me())return false;const m=myMatch();return !!m&&!(m.pend&&m.pend.by===(m.a===me()?'a':'b'))}
+function notifyCheck(){
+  const t=myTurn();
+  if(prevTurn!==null&&t&&!prevTurn)alertTurn();
+  prevTurn=t;
+  document.title=(t?'🔔 À toi de jouer ! · ':'')+'Master Chifoumi — Édition RSP 2026';
+}
+function alertTurn(){
+  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+  try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.15;o.start();o.stop(c.currentTime+.25)}catch(e){}
+  try{if(window.Notification&&Notification.permission==='granted')new Notification('À toi de jouer !',{body:'Un match t’attend au tournoi.'})}catch(e){}
+}
+async function askNotif(){try{await Notification.requestPermission()}catch(e){}render()}
+
+/* ---------- Tableau ---------- */
+function bracketView(){
+  if(!S.cfg)return wrap('<p class="text-center">Aucun tournoi pour le moment.</p>');
+  if(watch)return matchView(watch);
+  const fin=S.matches[mk(S.cfg.rounds-1,0)],th=S.matches.third,id=me(),pw=x=>x&&x!=='none'?pn(x):'—';
+  const card=m=>{
+    const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid?pn(pid)+(m.ff===pid?' ⏱':''):(m.r===0?'Exempt':'À définir')}</span><span>${s}</span></div>`;
+    const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
+    return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} class="card p-1 text-sm mb-3 ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
+  };
+  let out='';
+  if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
+  let cols='';
+  for(let r=0;r<S.cfg.rounds;r++){
+    let cs='';
+    for(let i=0;i<S.cfg.size/2**(r+1);i++){const m=S.matches[mk(r,i)];if(m)cs+=card(m)}
+    cols+=`<div class="min-w-[9.5rem] flex flex-col justify-around"><div class="text-xs font-bold text-center mb-2 opacity-90">${rlabel(r)}</div>${cs}</div>`;
+  }
+  const third=th?`<div class="mt-3"><div class="text-xs font-bold mb-2 opacity-90">🥉 Petite finale (3e place)</div><div class="max-w-[9.5rem]">${card(th)}</div></div>`:'';
+  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-3">${cols}</div>${third}</div>`;
+}
+function openMatch(k){watch=k;render();window.scrollTo(0,0)}
+function matchView(k){
+  const m=S.matches[k],back=`<button onclick="watch=null;render()" class="mb-3 px-3 py-2 rounded-xl card text-sm font-bold">← Retour au tableau</button>`;
+  if(!m)return back+wrap('<p class="text-center">Match introuvable.</p>');
+  const A=pn(m.a)||'À définir',B=pn(m.b)||'À définir',pl=pn(m.pend?(m.pend.by==='a'?m.a:m.b):null),wt=pn(m.pend?(m.pend.by==='a'?m.b:m.a):null);
+  const st=m.w?`<div class="mt-3 p-3 rounded-2xl bg-emerald-500 text-center font-bold">🏁 Vainqueur : ${pn(m.w)||'—'}${m.ff?`<div class="text-xs font-normal mt-1">⏱ ${pn(m.ff)} éliminé(e) : délai dépassé</div>`:''}</div>`
+    :m.pend?`<div class="mt-3 p-3 rounded-2xl bg-yellow-400 text-yellow-950 text-center font-bold">🔒 ${pl} a joué son coup (secret) · en attente de ${wt}${m.due?`<div class="text-xs font-semibold mt-1">⏱ reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`
+    :`<div class="mt-3 p-3 rounded-2xl card text-center">${m.a&&m.b?'Prochain tour à jouer…':'Match pas encore défini'}</div>`;
+  const hist=(m.hist||[]).map((x,i)=>`<div class="flex items-center justify-between gap-2 py-2 border-b border-white/20 text-sm"><span class="opacity-80">Tour ${i+1}</span><span class="text-2xl">${E[x.a]} <span class="text-sm">vs</span> ${E[x.b]}</span><span class="text-right font-semibold">${x.w==='='?'🤝 Égalité':'✅ '+pn(x.w==='a'?m.a:m.b)}</span></div>`).join('');
+  return back+wrap(`<div class="text-center text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div>
+    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold truncate">${A}</div><div class="text-4xl font-black">${m.sa} - ${m.sb}</div><div class="flex-1 text-center font-bold truncate">${B}</div></div>${st}
+    ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
+    <p class="text-xs text-center mt-3 opacity-70">👁 Mode spectateur : un coup en attente reste secret tant que les deux joueurs n'ont pas joué.</p>`);
+}
+
+function aboutView(){
+  return wrap(`<h2 class="text-xl font-black text-center mb-3">À propos</h2>
+  <p class="mb-3">Bienvenue dans ce grand tournoi de Pierre-Feuille-Ciseaux !</p>
+  <p class="mb-3">L'objectif de cette application est simple : proposer une animation conviviale pour favoriser le team-connect et apporter une bonne dose de having-fun au sein de l'équipe de l'après-midi. C'est l'occasion de partager un moment sympa, de créer du lien entre collègues et de se défier dans un esprit 100 % ludique et bon enfant.</p>
+  <div class="rounded-xl bg-yellow-300/20 p-3 mb-3"><p class="font-bold mb-1">⚠️ Rappel important :</p><p>Pour le bon déroulement de l'activité et le respect du cadre de travail, l'ensemble des matchs doit se jouer strictement durant vos temps de pause ou en dehors de vos heures de travail. Merci à chacun d'être vigilant afin de préserver l'organisation et la sécurité de tous.</p></div>
+  <p class="font-semibold text-center">Bons matchs et que le/la meilleur(e) gagne !</p>`);
+}
+
+/* ---------- Organisateur ---------- */
+function waiting(){
+  const out=[];
+  for(const m of Object.values(S.matches)){
+    if(m.w||!m.a||!m.b)continue;
+    if(!m.pend||m.pend.by==='b')out.push(m.a);
+    if(!m.pend||m.pend.by==='a')out.push(m.b);
+  }
+  return out;
+}
+function adminView(){
+  if(!adminKey)return wrap(`<p class="font-bold mb-2">Espace organisateur</p><input id="ak" type="password" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Clé organisateur (ADMIN_KEY)" class="w-full rounded-xl p-3 text-slate-900"><button onclick="adminLogin()" class="w-full mt-3 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Entrer</button>`);
+  if(!S.cfg)return wrap(`<p class="font-bold mb-2">Créer le tournoi</p><p class="text-sm opacity-90 mb-2">Un prénom par ligne (minimum 2), suivi si tu le souhaites d'une virgule et de l'e-mail du joueur (visible uniquement par toi). L'arbre est tiré au sort ; les joueurs en trop sont exemptés au 1er tour.</p>
+    <textarea id="names" rows="8" class="w-full rounded-xl p-3 text-slate-900" placeholder="Alice, alice@exemple.fr&#10;Bruno, bruno@exemple.fr&#10;Chloé&#10;David"></textarea>
+    <button onclick="createT()" class="w-full mt-3 py-4 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Générer le tournoi 🚀</button>`);
+  let h=wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
+  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.map(p=>`<div class="flex justify-between py-1 border-b border-white/20"><span>${esc(p.name)}${adm.emails[p.id]?' ✉️':''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>`).join('')}</div>`);
+  const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
+  const bt=(l,c)=>`<button onclick="${c}" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">${l}</button>`;
+  h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
+    const head=`<div>${m.id==='third'?'🥉 ':m.r===S.cfg.rounds-1?'🏆 ':''}${pn(m.a)} ${m.sa}-${m.sb} ${pn(m.b)}</div>`;
+    if(m.pend){const w=m.pend.by==='a'?m.b:m.a;return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">${pn(w)} doit jouer · reste <b data-cd="${m.due}">${cd(m.due-now())}</b></div><div class="flex gap-2 mt-1">${bt('+24 h',`adm2('extend','${k}')`)}${bt('Éliminer '+pn(w),`adm2('forfeit','${k}','${w}')`)}</div></div>`}
+    return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`)}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`)}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
+  h+=wrap(`<button onclick="resetT()" class="w-full py-3 rounded-2xl ${confirmReset?'bg-rose-600':'card'} font-bold">${confirmReset?'Confirmer : tout supprimer':'Réinitialiser le tournoi'}</button><button onclick="adminKey='';ls.del('pfc_ak');adm=null;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Quitter l'espace organisateur</button>`);
+  return h;
+}
+function drawQR(){const el=$('#qr');if(!el||!window.QRCode)return;el.innerHTML='';try{new QRCode(el,{text:location.origin+location.pathname,width:200,height:200})}catch(e){}}
+async function adm2(a,id,loser){
+  if(a==='forfeit'&&!confirm('Confirmer l\'élimination ? Cette action est définitive.'))return;
+  try{await api(a,{id,loser});S=await loadState()}catch(e){alert('Erreur : '+e.message)}
+  lastSig='';render();
+}
+async function adminLogin(){
+  adminKey=$('#ak').value.trim();
+  try{adm=await api('admin');ls.set('pfc_ak',adminKey)}catch(e){adminKey='';alert(e.status===401?'Clé incorrecte.':'Erreur serveur : '+e.message)}
+  render();
+}
+async function createT(){
+  try{await api('create',{text:$('#names').value});S=await loadState();adm=await api('admin')}
+  catch(e){alert(e.message==='min2'?'Entre au moins 2 prénoms.':'Erreur lors de la création.')}
+  render();
+}
+async function resetT(){
+  if(!confirmReset){confirmReset=true;render();return}
+  confirmReset=false;
+  try{await api('reset');S=await loadState();adm=null;tok=null;ls.del('pfc_tok')}catch(e){}
+  render();
+}
+</script></body></html>
