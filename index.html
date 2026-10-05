@@ -19,7 +19,7 @@ const E={r:STONE,f:'📄',c:'✂️'},N={r:'Pierre',f:'Feuille',c:'Ciseaux'};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',skew=0,watch=null;
+let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',skew=0,watch=null,confSig='',confRaf=null;
 $('#ttl').innerHTML='<div>'+STONE+' 📄 ✂️</div><div class="text-lg mt-1">Master Chifoumi — Édition RSP 2026</div>';
 
 async function api(action,extra){
@@ -66,6 +66,7 @@ function render(){
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
+  champCheck();
 }
 function setTab(t){tab=t;watch=null;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render()}
 
@@ -83,7 +84,7 @@ function jeuView(){
   const m=myMatch();
   if(!m){
     const fin=S.matches[mk(S.cfg.rounds-1,0)];
-    if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p>');
+    if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>');
     const th=S.matches.third;
     if(th&&(th.a===id||th.b===id)){
       if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>':'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'));
@@ -135,6 +136,36 @@ async function play(id){
   if(!sel||busy)return;busy=true;render();
   try{S=norm(await api('play',{id,mv:sel}));sel=null}catch(e){alert(e.message==='deadline'?'Le délai est dépassé : tu es éliminé(e) de ce match.':'Erreur, réessaie.');refresh()}
   busy=false;render();
+}
+
+/* ---------- Confettis du champion ---------- */
+function confetti(){
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  let cv=document.getElementById('cf');
+  if(!cv){cv=document.createElement('canvas');cv.id='cf';cv.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:9999';document.body.appendChild(cv)}
+  const ctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1,W=window.innerWidth,H=window.innerHeight;
+  cv.width=W*dpr;cv.height=H*dpr;
+  const colors=['#ff3b6b','#ffd23f','#3bceac','#4cc9f0','#b388ff','#ff9f1c','#7cfc00'],P=[];
+  const burst=(x,y,n)=>{for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=(5+Math.random()*10)*dpr;P.push({x:x*dpr,y:y*dpr,vx:Math.cos(a)*v,vy:Math.sin(a)*v-8*dpr,w:(6+Math.random()*6)*dpr,h:(4+Math.random()*5)*dpr,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:colors[i%colors.length],life:0})}};
+  burst(W/2,H*.4,170);
+  setTimeout(()=>burst(W*.2,H*.5,90),250);
+  setTimeout(()=>burst(W*.8,H*.5,90),450);
+  cancelAnimationFrame(confRaf);
+  const t0=Date.now(),step=()=>{
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(const p of P){p.vy+=.35*dpr;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life++;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.globalAlpha=Math.max(0,1-p.life/220);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore()}
+    if(Date.now()-t0<6000)confRaf=requestAnimationFrame(step);else cv.remove();
+  };
+  confRaf=requestAnimationFrame(step);
+}
+// Déclenche l'explosion une seule fois par appareil, dès que le joueur connecté est vu comme champion
+function champCheck(){
+  const id=me(),fin=S.cfg&&S.matches[mk(S.cfg.rounds-1,0)];
+  if(!id||!fin||fin.w!==id)return;
+  const sig=id+'|'+(fin.hist||[]).map(h=>h.a+h.b).join('');
+  if(confSig===sig||ls.get('pfc_conf')===sig)return;
+  confSig=sig;ls.set('pfc_conf',sig);confetti();
 }
 
 /* ---------- Alertes (page ouverte) ---------- */
