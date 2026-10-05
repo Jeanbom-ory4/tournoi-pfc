@@ -84,7 +84,7 @@ function jeuView(){
   const m=myMatch();
   if(!m){
     const fin=S.matches[mk(S.cfg.rounds-1,0)];
-    if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p><p class="text-center italic mt-4 text-sm opacity-90">« La pierre apprend la solidité, la feuille la souplesse, le ciseau la précision. Le sage, lui, sait quand utiliser chacune. »</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>');
+    if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p><p class="text-center italic mt-4 text-lg leading-relaxed">« La pierre apprend la solidité, la feuille la souplesse, le ciseau la précision. Le sage, lui, sait quand utiliser chacune. »</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>');
     const th=S.matches.third;
     if(th&&(th.a===id||th.b===id)){
       if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>':'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'));
