@@ -33,6 +33,9 @@ const pn=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?esc(p.nam
 const raw=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?p.name:'?'};
 const mk=(r,i)=>`m${r}_${i}`;
 const rlabel=r=>{const k=S.cfg.rounds-r;return k===1?'Finale':k===2?'Demi-finales':k===3?'Quarts de finale':'Tour '+(r+1)};
+const Q_LOSE="« Le vrai maître n'est pas celui qui gagne toujours, mais celui qui sait lire le monde avec patience et simplicité. »";
+const Q_THIRD="« La victoire est belle, mais la plus grande richesse reste le chemin parcouru ensemble et le rire partagé. »";
+const quoteP=q=>`<p class="text-center italic mt-4 text-lg leading-relaxed">${q}</p>`;
 const mlabel=m=>m.id==='third'?'Petite finale (3e place)':rlabel(m.r);
 const wrap=h=>`<div class="card p-4 mb-3">${h}</div>`;
 const now=()=>Date.now()+skew;
@@ -85,17 +88,17 @@ function jeuView(){
   if(!m){
     const fin=S.matches[mk(S.cfg.rounds-1,0)];
     if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p><p class="text-center italic mt-4 text-lg leading-relaxed">« La pierre apprend la solidité, la feuille la souplesse, le ciseau la précision. Le sage, lui, sait quand utiliser chacune. »</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>');
+    const ffm=Object.values(S.matches).find(x=>x.ff===id);
+    if(ffm&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">⏱ Délai dépassé : tu as été éliminé(e).</p><p class="text-center mt-2 text-sm">Tu n\'as pas joué dans les '+S.cfg.hours+' h. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé !</p>');
     const th=S.matches.third;
     if(th&&(th.a===id||th.b===id)){
-      if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>':'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'));
+      if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>'+quoteP(Q_THIRD):'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)));
       return wrap(head+'<p class="text-center font-bold">⏳ En attente de l\'adversaire de la petite finale…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>');
     }
-    if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>');
+    if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>'+quoteP(Q_LOSE));
     if(fin&&fin.w)return wrap(head+`<p class="text-center font-bold">Le tournoi est terminé.</p><p class="text-center mt-2">🏆 Vainqueur : ${pn(fin.w)}</p>`);
-    const ffm=Object.values(S.matches).find(x=>x.ff===id);
-    if(ffm)return wrap(head+'<p class="text-center font-bold">⏱ Délai dépassé : tu as été éliminé(e).</p><p class="text-center mt-2 text-sm">Tu n\'as pas joué dans les '+S.cfg.hours+' h. Suis la suite dans l\'onglet Tableau.</p>');
-    const lost=Object.values(S.matches).some(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id);
-    return wrap(head+(lost?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
+    const lostM=Object.values(S.matches).find(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id),lost=!!lostM,early=!!lostM&&lostM.id!=='third'&&lostM.r<S.cfg.rounds-2;
+    return wrap(head+(lost?(early?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)+'<p class="text-center mt-4 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>'):'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
   }
   const side=m.a===id?'a':'b',o=side==='a'?'b':'a',opp=m[o],mine=m['s'+side],theirs=m['s'+o];
   const locked=m.pend&&m.pend.by===side;
