@@ -11,6 +11,9 @@ const ADMIN = process.env.ADMIN_KEY;
 const BEATS = { r: 'c', f: 'r', c: 'f' };
 const CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const DELAY = (Number(process.env.DEADLINE_HOURS) || 48) * 3600e3; // délai pour jouer après le coup de l'adversaire
+const MAX_TRIES = 5;                                                   // mauvais codes avant blocage
+const LOCK = (Number(process.env.LOCK_MINUTES) || 10) * 60e3;          // durée du blocage d'un joueur
+const lockKey = (cfg, id) => 'pfc:lock:' + (cfg.tid || '') + ':' + id;
 const hrs = (ms) => Math.round(ms / 3600e3 * 100) / 100;
 const mk = (r, i) => `m${r}_${i}`;
 const hash = (s) => crypto.createHash('sha256').update(s + SECRET).digest('hex');
@@ -79,7 +82,16 @@ module.exports = async (req, res) => {
 
     if (a === 'login') {
       const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
-      if (!p || hash(String(b.pin).toUpperCase() + p.id) !== p.h) return res.status(401).json({ error: 'pin' });
+      if (!p) return res.status(401).json({ error: 'pin' });
+      const lk = lockKey(cfg, p.id), st = (await redis.get(lk)) || { n: 0, until: 0 }, ex = Math.ceil(LOCK / 1000) + 1800;
+      if (st.until > Date.now()) return res.status(429).json({ error: 'locked', retry: Math.ceil((st.until - Date.now()) / 1000) }); // bloqué : même le bon code est refusé
+      if (hash(String(b.pin).toUpperCase() + p.id) !== p.h) {
+        st.n = (st.n || 0) + 1;
+        if (st.n >= MAX_TRIES) { st.until = Date.now() + LOCK; st.n = 0; await redis.set(lk, st, { ex }); return res.status(429).json({ error: 'locked', retry: Math.ceil(LOCK / 1000) }); }
+        await redis.set(lk, st, { ex });
+        return res.status(401).json({ error: 'pin', left: MAX_TRIES - st.n });
+      }
+      await redis.del(lk); // bon code : le compteur d'essais est remis à zéro
       return res.json({ token: sign(p.id, cfg.tid || '') });
     }
 
@@ -109,7 +121,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -130,7 +142,17 @@ module.exports = async (req, res) => {
         }
         return res.json({ ok: 1 });
       }
-      if (a === 'admin') return res.json({ pins: (await redis.get('pfc:pins')) || {} });
+      if (a === 'unlock') {
+        const cfg = await redis.get('pfc:cfg');
+        if (!cfg || !cfg.players.some((p) => p.id === b.id)) return res.status(400).json({ error: 'joueur' });
+        await redis.del(lockKey(cfg, b.id));
+        return res.json({ ok: 1 });
+      }
+      if (a === 'admin') {
+        const cfg = await redis.get('pfc:cfg'), locks = {};
+        if (cfg) for (const p of cfg.players) { const st = await redis.get(lockKey(cfg, p.id)); if (st && st.until > Date.now()) locks[p.id] = st.until; }
+        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks });
+      }
       if (a === 'reset') { await wipe(); return res.json({ ok: 1 }); }
 
       const seen = new Set(), names = [];
