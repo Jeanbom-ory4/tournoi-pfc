@@ -14,8 +14,9 @@ const DELAY = (Number(process.env.DEADLINE_HOURS) || 48) * 3600e3; // délai pou
 const hrs = (ms) => Math.round(ms / 3600e3 * 100) / 100;
 const mk = (r, i) => `m${r}_${i}`;
 const hash = (s) => crypto.createHash('sha256').update(s + SECRET).digest('hex');
-const sign = (id) => id + '.' + crypto.createHmac('sha256', SECRET).update(id).digest('hex').slice(0, 32);
-const who = (t) => { const id = String(t || '').split('.')[0]; return id && sign(id) === t ? id : null; };
+// Le jeton est lié à l'identifiant du tournoi (tid) : après une réinitialisation, les anciens jetons ne sont plus valables
+const sign = (id, tid) => `${id}.${tid}.` + crypto.createHmac('sha256', SECRET).update(`${id}.${tid}`).digest('hex').slice(0, 32);
+const who = (t, tid) => { const id = String(t || '').split('.')[0]; return id && sign(id, tid || '') === t ? id : null; };
 const isAdmin = (k) => !!ADMIN && String(k || '').trim() === ADMIN.trim();
 const ids = (cfg) => { const o = []; for (let r = 0; r < cfg.rounds; r++) for (let i = 0; i < cfg.size / 2 ** (r + 1); i++) o.push(mk(r, i)); if (cfg.rounds >= 2) o.push('third'); return o; };
 
@@ -28,7 +29,7 @@ async function load() {
 }
 // Vue publique : ni PIN, et le coup en attente n'est JAMAIS renvoyé (seulement qui a joué)
 const pub = ({ cfg, matches }) => ({
-  cfg: cfg && { players: cfg.players.map(({ id, name }) => ({ id, name })), rounds: cfg.rounds, size: cfg.size, hours: hrs(DELAY), started: cfg.started !== false },
+  cfg: cfg && { players: cfg.players.map(({ id, name }) => ({ id, name })), rounds: cfg.rounds, size: cfg.size, hours: hrs(DELAY), started: cfg.started !== false, tid: cfg.tid || '' },
   matches: Object.fromEntries(Object.entries(matches).map(([k, { rem, ...m }]) => [k, { ...m, pend: m.pend ? { by: m.pend.by } : null }])),
 });
 const out = (st) => ({ ...pub(st), now: Date.now() });
@@ -79,14 +80,14 @@ module.exports = async (req, res) => {
     if (a === 'login') {
       const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
       if (!p || hash(String(b.pin).toUpperCase() + p.id) !== p.h) return res.status(401).json({ error: 'pin' });
-      return res.json({ token: sign(p.id) });
+      return res.json({ token: sign(p.id, cfg.tid || '') });
     }
 
     if (a === 'play') {
-      const me = who(b.token);
+      const c0 = await redis.get('pfc:cfg'), me = c0 && who(b.token, c0.tid);
       if (!me) return res.status(401).json({ error: 'auth' });
       if (!['r', 'f', 'c'].includes(b.mv)) return res.status(400).json({ error: 'coup' });
-      { const c0 = await redis.get('pfc:cfg'); if (c0 && c0.started === false) return res.status(409).json({ error: 'notstarted' }); }
+      if (c0.started === false) return res.status(409).json({ error: 'notstarted' });
       const st = await sweep(await load()), cfg = st.cfg, m = st.matches[b.id], key = 'pfc:m:' + b.id;
       if (m && m.w && m.ff === me) return res.status(409).json({ error: 'deadline' });
       if (!m || m.w || !m.a || !m.b || (m.a !== me && m.b !== me)) return res.status(400).json({ error: 'match' });
@@ -157,7 +158,7 @@ module.exports = async (req, res) => {
         if (!m.a || !m.b) { m.w = m.a || m.b; if (rounds > 1) M[mk(1, i >> 1)][i % 2 ? 'b' : 'a'] = m.w; if (rounds === 2) M.third.got++; }
       }
       await Promise.all([
-        redis.set('pfc:cfg', { players, rounds, size, started: false }), redis.set('pfc:pins', pins),
+        redis.set('pfc:cfg', { players, rounds, size, started: false, tid: crypto.randomBytes(4).toString('hex') }), redis.set('pfc:pins', pins),
         ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
       ]);
       return res.json({ ok: 1 });
