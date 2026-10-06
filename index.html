@@ -25,7 +25,7 @@ $('#ttl').innerHTML='<div>'+STONE+' 📄 ✂️</div><div class="text-lg mt-1">M
 async function api(action,extra){
   const r=await fetch('/api/pfc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:tok,key:adminKey,...extra})});
   const j=await r.json().catch(()=>({}));
-  if(!r.ok)throw Object.assign(new Error(j.error||'erreur'),{status:r.status});
+  if(!r.ok)throw Object.assign(new Error(j.error||'erreur'),{status:r.status,data:j});
   return j;
 }
 const me=()=>tok?tok.split('.')[0]:null;
@@ -126,7 +126,7 @@ function loginView(){
   if(!lg.id)return wrap(`<p class="font-bold text-center mb-3">Qui es-tu ?</p><div class="grid grid-cols-2 gap-2">${[...S.cfg.players].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(p=>`<button onclick="lg={id:'${p.id}',pin:'',err:false};render()" class="card py-4 px-2 font-bold truncate">${esc(p.name)}</button>`).join('')}</div>`);
   return wrap(`<p class="font-bold text-center">${pn(lg.id)}</p><p class="text-center text-sm mb-3 opacity-80">Saisis ton code à 4 caractères (lettres et chiffres)</p>
   <input id="pin" value="${lg.pin}" maxlength="4" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" oninput="pinIn(this)" placeholder="••••" class="block mx-auto w-48 text-center text-3xl font-black uppercase rounded-xl p-3 text-slate-900 ${lg.err?'shake':''}" style="letter-spacing:.35em">
-  <p class="text-center text-sm h-5 mt-2 text-yellow-200">${lg.err?'Code incorrect':''}</p>
+  <p class="text-center text-sm min-h-[1.25rem] mt-2 text-yellow-200">${lg.err?(lg.msg||'Code incorrect'):''}</p>
   <label class="flex items-center justify-center gap-2 text-sm my-2"><input type="checkbox" ${remember?'checked':''} onchange="remember=this.checked" class="w-5 h-5"> Mémoriser ma connexion</label>
   <button onclick="lg={id:null,pin:'',err:false};render()" class="block mx-auto mt-2 text-sm underline opacity-80">← Retour</button>`);
 }
@@ -134,7 +134,12 @@ async function pinIn(el){
   lg.pin=el.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);el.value=lg.pin;lg.err=false;
   if(lg.pin.length<4)return;
   try{const j=await api('login',{id:lg.id,pin:lg.pin});tok=j.token;if(remember)ls.set('pfc_tok',tok);else ls.del('pfc_tok');lg={id:null,pin:'',err:false};sel=null;prevTurn=null}
-  catch(e){lg.pin='';lg.err=true}
+  catch(e){
+    lg.pin='';lg.err=true;
+    const d=e.data||{};
+    if(e.status===429)lg.msg='Trop d\'essais : réessaie dans '+Math.max(1,Math.ceil((d.retry||600)/60))+' min.';
+    else lg.msg='Code incorrect'+(d.left>0&&d.left<=3?' ('+d.left+' essai'+(d.left>1?'s':'')+' restant'+(d.left>1?'s':'')+')':'');
+  }
   render();
 }
 function logout(){tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
@@ -255,7 +260,7 @@ function adminView(){
     <textarea id="names" rows="8" class="w-full rounded-xl p-3 text-slate-900" placeholder="Alice&#10;Bruno&#10;Chloé&#10;David"></textarea>
     <button onclick="createT()" class="w-full mt-3 py-4 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Générer le tournoi 🚀</button>`);
   let h=startCard()+wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
-  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.map(p=>`<div class="flex justify-between py-1 border-b border-white/20"><span>${esc(p.name)}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>`).join('')}</div>`);
+  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
   const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
   const bt=(l,c)=>`<button onclick="${c}" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">${l}</button>`;
   h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
@@ -269,6 +274,10 @@ function drawQR(){const el=$('#qr');if(!el||!window.QRCode)return;el.innerHTML='
 async function startT(){
   if(!confirm('Lancer officiellement le tournoi ? Les joueurs pourront jouer tout de suite.'))return;
   try{await api('start');S=await loadState()}catch(e){alert('Erreur : '+e.message)}
+  lastSig='';render();
+}
+async function unlock(id){
+  try{await api('unlock',{id});adm=await api('admin')}catch(e){alert('Erreur : '+e.message)}
   lastSig='';render();
 }
 async function adm2(a,id,loser){
