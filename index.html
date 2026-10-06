@@ -44,13 +44,15 @@ const loadState=async()=>norm(await api('state'));
 const cd=ms=>{if(ms<=0)return 'délai dépassé';const h=Math.floor(ms/3.6e6),mn=Math.floor(ms%3.6e6/6e4);return h+' h '+String(mn).padStart(2,'0')};
 setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.dataset.cd-now();el.textContent=cd(d);if(d<=0&&!document.hidden)refresh()}),30000);
 
+// Déconnecte automatiquement si le tournoi a été réinitialisé (jeton d'un ancien tournoi)
+function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
 async function refresh(){
   const f=document.activeElement;
   if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
   try{S=await loadState();loadErr=null}catch(e){loadErr=e.message+(e.status?' (HTTP '+e.status+')':'')}
   loaded=true;
   if(adminKey&&tab==='admin'){try{adm=await api('admin')}catch(e){if(e.status===401){adminKey='';ls.del('pfc_ak')}}}
-  if(tok&&S.cfg&&!pn(me())){tok=null;ls.del('pfc_tok')}
+  checkSession();
   const sig=JSON.stringify([S,loadErr,adm,tok,loaded]);
   if(sig===lastSig)return;   // rien n'a changé : on ne redessine pas
   lastSig=sig;render();
@@ -138,7 +140,7 @@ async function pinIn(el){
 function logout(){tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
 async function play(id){
   if(!sel||busy)return;busy=true;render();
-  try{S=norm(await api('play',{id,mv:sel}));sel=null}catch(e){alert(e.message==='deadline'?'Le délai est dépassé : tu es éliminé(e) de ce match.':e.message==='notstarted'?'Le tournoi n\'a pas encore été lancé par l\'organisateur.':'Erreur, réessaie.');refresh()}
+  try{S=norm(await api('play',{id,mv:sel}));sel=null}catch(e){if(e.status===401){tok=null;ls.del('pfc_tok')}alert(e.status===401?'Ta connexion n\'est plus valide : reconnecte-toi.':e.message==='deadline'?'Le délai est dépassé : tu es éliminé(e) de ce match.':e.message==='notstarted'?'Le tournoi n\'a pas encore été lancé par l\'organisateur.':'Erreur, réessaie.');refresh()}
   busy=false;render();
 }
 
