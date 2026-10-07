@@ -11,8 +11,8 @@ const ADMIN = process.env.ADMIN_KEY;
 const BEATS = { r: 'c', f: 'r', c: 'f' };
 const CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const DELAY = (Number(process.env.DEADLINE_HOURS) || 48) * 3600e3; // délai pour jouer après le coup de l'adversaire
-const MAX_TRIES = 5;                                                   // mauvais codes avant blocage
-const LOCK = (Number(process.env.LOCK_MINUTES) || 10) * 60e3;          // durée du blocage d'un joueur
+const MAX_TRIES = Number(process.env.MAX_TRIES) || 7;                  // mauvais codes avant blocage
+const LOCK = (Number(process.env.LOCK_MINUTES) || 3) * 60e3;           // durée du blocage d'un joueur
 const lockKey = (cfg, id) => 'pfc:lock:' + (cfg.tid || '') + ':' + id;
 const hrs = (ms) => Math.round(ms / 3600e3 * 100) / 100;
 const mk = (r, i) => `m${r}_${i}`;
