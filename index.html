@@ -202,18 +202,27 @@ function bracketView(){
   const card=m=>{
     const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid?pn(pid)+(m.ff===pid?' ⏱':''):(m.r===0?'Exempt':'À définir')}</span><span>${s}</span></div>`;
     const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
-    return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} class="card p-1 text-sm mb-3 ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
+    return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:64px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
   };
   let out='';
   if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
   let cols='';
-  for(let r=0;r<S.cfg.rounds;r++){
-    let cs='';
-    for(let i=0;i<S.cfg.size/2**(r+1);i++){const m=S.matches[mk(r,i)];if(m)cs+=card(m)}
-    cols+=`<div class="min-w-[9.5rem] flex flex-col justify-around"><div class="text-xs font-bold text-center mb-2 opacity-90">${rlabel(r)}</div>${cs}</div>`;
+  const R=S.cfg.rounds,line='background:rgba(255,255,255,.4)',dash='rgba(255,255,255,.45)',LAB=36,CARD=64;
+  for(let r=0;r<R;r++){
+    let cs='';const H=80*2**r;   // chaque match du tour r occupe une « case » de hauteur H : la carte y est centrée, donc centrée entre ses deux matchs précédents
+    for(let i=0;i<S.cfg.size/2**(r+1);i++){
+      const m=S.matches[mk(r,i)];
+      let conn=(r<R-1?`<div style="position:absolute;right:-12px;top:50%;width:12px;height:2px;${line}"></div><div style="position:absolute;right:-12px;width:2px;${i%2?'bottom:50%':'top:50%'};height:${H/2}px;${line}"></div>`:'')+(r>0?`<div style="position:absolute;left:-12px;top:50%;width:12px;height:2px;${line}"></div>`:'');
+      if(th&&R>=2&&r===R-2){   // traits en pointillés : demi-finales -> petite finale (sous la finale)
+        const L=2*H+LAB+CARD/2-(i*H+H/2);
+        conn+=`<div style="position:absolute;right:-6px;top:50%;height:${L}px;border-left:2px dashed ${dash}"></div>`+(i===1?`<div style="position:absolute;right:-24px;top:calc(50% + ${L}px);width:18px;border-top:2px dashed ${dash}"></div>`:'');
+      }
+      cs+=`<div class="flex items-center" style="position:relative;height:${H}px"><div class="w-full">${m?card(m):''}</div>${conn}</div>`;
+    }
+    if(th&&r===R-1)cs+=`<div class="text-xs font-bold text-center opacity-90" style="height:${LAB}px"><div>🥉 Petite finale</div><div class="font-normal opacity-80" style="font-size:10px">perdants des demi-finales</div></div><div style="height:${CARD}px">${card(th)}</div>`;
+    cols+=`<div class="min-w-[9.5rem]"><div class="text-xs font-bold text-center mb-2 opacity-90">${rlabel(r)}</div>${cs}</div>`;
   }
-  const third=th?`<div class="mt-3"><div class="text-xs font-bold mb-2 opacity-90">🥉 Petite finale (3e place)</div><div class="max-w-[9.5rem]">${card(th)}</div></div>`:'';
-  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-3">${cols}</div>${third}</div>`;
+  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-6 pb-1">${cols}</div></div>`;
 }
 function openMatch(k){watch=k;render();window.scrollTo(0,0)}
 function matchView(k){
