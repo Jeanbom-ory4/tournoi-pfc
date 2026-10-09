@@ -207,19 +207,19 @@ function bracketView(){
   let out='';
   if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
   let cols='';
-  const R=S.cfg.rounds,line='background:rgba(255,255,255,.4)',dash='rgba(255,255,255,.45)',LAB=36,CARD=64;
+  const R=S.cfg.rounds,line='background:rgba(255,255,255,.4)',dash='rgba(255,255,255,.45)',LAB=56,CARD=64;
   for(let r=0;r<R;r++){
     let cs='';const H=80*2**r;   // chaque match du tour r occupe une « case » de hauteur H : la carte y est centrée, donc centrée entre ses deux matchs précédents
     for(let i=0;i<S.cfg.size/2**(r+1);i++){
       const m=S.matches[mk(r,i)];
       let conn=(r<R-1?`<div style="position:absolute;right:-12px;top:50%;width:12px;height:2px;${line}"></div><div style="position:absolute;right:-12px;width:2px;${i%2?'bottom:50%':'top:50%'};height:${H/2}px;${line}"></div>`:'')+(r>0?`<div style="position:absolute;left:-12px;top:50%;width:12px;height:2px;${line}"></div>`:'');
       if(th&&R>=2&&r===R-2){   // traits en pointillés : demi-finales -> petite finale (sous la finale)
-        const L=2*H+LAB+CARD/2-(i*H+H/2);
+        const L=i===0?H:2*H+LAB+CARD/2-(i*H+H/2);   // 1re demi-finale : jusqu'à la 2e ; 2e demi-finale : jusqu'à la petite finale (pas de superposition)
         conn+=`<div style="position:absolute;right:-6px;top:50%;height:${L}px;border-left:2px dashed ${dash}"></div>`+(i===1?`<div style="position:absolute;right:-24px;top:calc(50% + ${L}px);width:18px;border-top:2px dashed ${dash}"></div>`:'');
       }
       cs+=`<div class="flex items-center" style="position:relative;height:${H}px"><div class="w-full">${m?card(m):''}</div>${conn}</div>`;
     }
-    if(th&&r===R-1)cs+=`<div class="text-xs font-bold text-center opacity-90" style="height:${LAB}px"><div>🥉 Petite finale</div><div class="font-normal opacity-80" style="font-size:10px">perdants des demi-finales</div></div><div style="height:${CARD}px">${card(th)}</div>`;
+    if(th&&r===R-1)cs+=`<div class="text-center" style="height:${LAB}px"><div class="text-sm font-bold">🥉 Petite finale</div><div class="leading-4 opacity-90" style="font-size:13px">perdants des demi-finales</div></div><div style="height:${CARD}px">${card(th)}</div>`;
     cols+=`<div class="min-w-[9.5rem]"><div class="text-xs font-bold text-center mb-2 opacity-90">${rlabel(r)}</div>${cs}</div>`;
   }
   return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-6 pb-1">${cols}</div></div>`;
