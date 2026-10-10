@@ -32,7 +32,9 @@ const me=()=>tok?tok.split('.')[0]:null;
 const pn=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?esc(p.name):null};
 const raw=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?p.name:'?'};
 const mk=(r,i)=>`m${r}_${i}`;
-const rlabel=r=>{const k=S.cfg.rounds-r;return k===1?'Finale':k===2?'Demi-finales':k===3?'Quarts de finale':'Tour '+(r+1)};
+// Tour préliminaire : quand le nombre de joueurs n'est pas une puissance de 2, seuls les joueurs « en trop » jouent au 1er tour, les autres sont exemptés
+const hasPre=()=>S.cfg.rounds>=3&&Object.values(S.matches).some(m=>m.r===0&&!(m.a&&m.b));
+const rlabel=r=>{const k=S.cfg.rounds-r;if(k===1)return 'Finale';if(k===2)return 'Demi-finales';if(r===0&&hasPre())return 'Tour préliminaire';if(k===3)return 'Quarts de finale';return 'Tour '+(hasPre()?r:r+1)};
 const Q_LOSE="« Le vrai maître n'est pas celui qui gagne toujours, mais celui qui sait lire le monde avec patience et simplicité. »";
 const Q_THIRD="« La victoire est belle, mais la plus grande richesse reste le chemin parcouru ensemble et le rire partagé. »";
 const quoteP=q=>`<p class="text-center italic mt-4 text-lg leading-relaxed">${q}</p>`;
@@ -103,8 +105,9 @@ function jeuView(){
     }
     if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>'+quoteP(Q_LOSE));
     if(fin&&fin.w)return wrap(head+`<p class="text-center font-bold">Le tournoi est terminé.</p><p class="text-center mt-2">🏆 Vainqueur : ${pn(fin.w)}</p>`);
+    const exempt=hasPre()&&Object.values(S.matches).some(x=>x.r===0&&x.w===id&&!(x.a&&x.b));
     const lostM=Object.values(S.matches).find(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id),lost=!!lostM,early=!!lostM&&lostM.id!=='third'&&lostM.r<S.cfg.rounds-2;
-    return wrap(head+(lost?(early?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)+'<p class="text-center mt-4 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>'):'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
+    return wrap(head+(lost?(early?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)+'<p class="text-center mt-4 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>'):(exempt?'<p class="text-center font-bold">Tu es exempté(e) du tour préliminaire.</p><p class="text-center mt-2 text-sm">Tu entres directement au tour suivant.</p>':'')+'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
   }
   const side=m.a===id?'a':'b',o=side==='a'?'b':'a',opp=m[o],mine=m['s'+side],theirs=m['s'+o];
   const locked=m.pend&&m.pend.by===side;
@@ -210,12 +213,15 @@ function bracketView(){
   let out='';
   if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
   let cols='';
+  const pre=hasPre(),nBye=pre?Object.values(S.matches).filter(m=>m.r===0&&!(m.a&&m.b)).length:0,lastReal=pre?Math.max(...Object.values(S.matches).filter(m=>m.r===0&&m.a&&m.b).map(m=>m.i)):-1;
   const R=S.cfg.rounds,line='background:#fff',dash='#fff',LAB=56,CARD=64;
   for(let r=0;r<R;r++){
     let cs='';const H=80*2**r;   // chaque match du tour r occupe une « case » de hauteur H : la carte y est centrée, donc centrée entre ses deux matchs précédents
     for(let i=0;i<S.cfg.size/2**(r+1);i++){
       const m=S.matches[mk(r,i)];
-      let conn=(r<R-1?`<div style="position:absolute;right:-12px;top:50%;width:12px;height:2px;${line}"></div><div style="position:absolute;right:-12px;width:2px;${i%2?'bottom:50%':'top:50%'};height:${H/2}px;${line}"></div>`:'')+(r>0?`<div style="position:absolute;left:-12px;top:50%;width:12px;height:2px;${line}"></div>`:'');
+      if(pre&&r===0){if(i>lastReal)break;if(!(m&&m.a&&m.b)){cs+=`<div style="height:${H}px"></div>`;continue}}   // les exemptés n'ont pas de carte : ils apparaissent directement au tour suivant
+      const fed=!(pre&&r===1)||[S.matches[mk(0,2*i)],S.matches[mk(0,2*i+1)]].some(x=>x&&x.a&&x.b);
+      let conn=(r<R-1?`<div style="position:absolute;right:-12px;top:50%;width:12px;height:2px;${line}"></div><div style="position:absolute;right:-12px;width:2px;${i%2?'bottom:50%':'top:50%'};height:${H/2}px;${line}"></div>`:'')+(r>0&&fed?`<div style="position:absolute;left:-12px;top:50%;width:12px;height:2px;${line}"></div>`:'');
       if(th&&R>=2&&r===R-2){   // traits en pointillés : demi-finales -> petite finale (sous la finale)
         const L=i===0?H:2*H+LAB+CARD/2-(i*H+H/2);   // 1re demi-finale : jusqu'à la 2e ; 2e demi-finale : jusqu'à la petite finale (pas de superposition)
         conn+=`<div style="position:absolute;right:-6px;top:50%;height:${L}px;border-left:2px dashed ${dash}"></div>`+(i===1?`<div style="position:absolute;right:-24px;top:calc(50% + ${L}px);width:18px;border-top:2px dashed ${dash}"></div>`:'');
@@ -225,7 +231,7 @@ function bracketView(){
     if(th&&r===R-1)cs+=`<div class="text-center" style="height:${LAB}px"><div class="text-sm font-bold">🥉 Petite finale</div><div class="leading-4 opacity-90" style="font-size:13px">perdants des demi-finales</div></div><div style="height:${CARD}px">${card(th)}</div>`;
     cols+=`<div class="min-w-[9.5rem]"><div class="text-xs font-bold text-center mb-2 opacity-90">${rlabel(r)}</div>${cs}</div>`;
   }
-  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-6 pb-1">${cols}</div></div>`;
+  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p>${pre?`<p class="text-xs text-center opacity-80 mb-2">${nBye} joueur${nBye>1?'s sont exemptés':' est exempté'} du tour préliminaire et ${nBye>1?'entrent':'entre'} directement au tour suivant.</p>`:''}<div class="overflow-x-auto"><div class="flex gap-6 pb-1">${cols}</div></div>`;
 }
 function openMatch(k){watch=k;render();window.scrollTo(0,0)}
 function matchView(k){
