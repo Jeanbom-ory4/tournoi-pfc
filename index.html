@@ -32,9 +32,11 @@ const me=()=>tok?tok.split('.')[0]:null;
 const pn=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?esc(p.name):null};
 const raw=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?p.name:'?'};
 const mk=(r,i)=>`m${r}_${i}`;
-// Tour préliminaire : quand le nombre de joueurs n'est pas une puissance de 2, seuls les joueurs « en trop » jouent au 1er tour, les autres sont exemptés
-const hasPre=()=>S.cfg.rounds>=3&&Object.values(S.matches).some(m=>m.r===0&&!(m.a&&m.b));
-const rlabel=r=>{const k=S.cfg.rounds-r;if(k===1)return 'Finale';if(k===2)return 'Demi-finales';if(r===0&&hasPre())return 'Tour préliminaire';if(k===3)return 'Quarts de finale';return 'Tour '+(hasPre()?r:r+1)};
+// Tableau : tous les joueurs jouent dès le tour 1 ; si un tour compte un nombre impair de joueurs, l'un d'eux est « exempté » (il passe directement au tour suivant)
+const isBye=m=>!!m&&(!!m.bye||(m.r===0&&!(m.a&&m.b)&&!!m.w));
+const cntC=r=>S.cfg.counts?S.cfg.counts[r]:S.cfg.size/2**(r+1);
+const routeC=(r,i)=>(cntC(r)%2===1&&(r+1)%2===1)?{t:i===0?0:((i-1)>>1)+1}:{t:i>>1};
+const rlabel=r=>{const k=S.cfg.rounds-r;if(k===1)return 'Finale';if(k===2)return 'Demi-finales';if(k===3&&cntC(r)===4)return 'Quarts de finale';return 'Tour '+(r+1)};
 const Q_LOSE="« Le vrai maître n'est pas celui qui gagne toujours, mais celui qui sait lire le monde avec patience et simplicité. »";
 const Q_THIRD="« La victoire est belle, mais la plus grande richesse reste le chemin parcouru ensemble et le rire partagé. »";
 const quoteP=q=>`<p class="text-center italic mt-4 text-lg leading-relaxed">${q}</p>`;
@@ -105,9 +107,9 @@ function jeuView(){
     }
     if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>'+quoteP(Q_LOSE));
     if(fin&&fin.w)return wrap(head+`<p class="text-center font-bold">Le tournoi est terminé.</p><p class="text-center mt-2">🏆 Vainqueur : ${pn(fin.w)}</p>`);
-    const exempt=hasPre()&&Object.values(S.matches).some(x=>x.r===0&&x.w===id&&!(x.a&&x.b));
+    const last=Object.values(S.matches).filter(x=>x.w===id).sort((x,y)=>y.r-x.r)[0],exempt=!!last&&isBye(last);
     const lostM=Object.values(S.matches).find(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id),lost=!!lostM,early=!!lostM&&lostM.id!=='third'&&lostM.r<S.cfg.rounds-2;
-    return wrap(head+(lost?(early?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)+'<p class="text-center mt-4 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>'):(exempt?'<p class="text-center font-bold">Tu es exempté(e) du tour préliminaire.</p><p class="text-center mt-2 text-sm">Tu entres directement au tour suivant.</p>':'')+'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
+    return wrap(head+(lost?(early?'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)+'<p class="text-center mt-4 text-sm">Suis la suite dans l\'onglet Tableau.</p>':'<p class="text-center font-bold">😢 Tu es éliminé(e).</p><p class="text-center mt-2 text-sm">Suis la suite dans l\'onglet Tableau.</p>'):(exempt?'<p class="text-center font-bold">Tu es exempté(e) de ce tour.</p><p class="text-center mt-2 text-sm">Tu passes directement au tour suivant.</p>':'')+'<p class="text-center font-bold">⏳ En attente de l\'adversaire du prochain tour…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>'));
   }
   const side=m.a===id?'a':'b',o=side==='a'?'b':'a',opp=m[o],mine=m['s'+side],theirs=m['s'+o];
   const locked=m.pend&&m.pend.by===side;
@@ -204,34 +206,49 @@ async function askNotif(){try{await Notification.requestPermission()}catch(e){}r
 function bracketView(){
   if(!S.cfg)return wrap('<p class="text-center">Aucun tournoi pour le moment.</p>');
   if(watch)return matchView(watch);
-  const fin=S.matches[mk(S.cfg.rounds-1,0)],th=S.matches.third,id=me(),pw=x=>x&&x!=='none'?pn(x):'—';
+  const R=S.cfg.rounds,fin=S.matches[mk(R-1,0)],th=S.matches.third,id=me(),pw=x=>x&&x!=='none'?pn(x):'—';
+  const CW=152,SLOT=80,CARD=64,LAB=56;
   const card=m=>{
-    const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid?pn(pid)+(m.ff===pid?' ⏱':''):(m.r===0?'Exempt':'À définir')}</span><span>${s}</span></div>`;
+    const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid?pn(pid)+(m.ff===pid?' ⏱':''):'À définir'}</span><span>${s}</span></div>`;
     const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
-    return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:64px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
+    return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:${CARD}px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
   };
   let out='';
   if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
-  let cols='';
-  const pre=hasPre(),nBye=pre?Object.values(S.matches).filter(m=>m.r===0&&!(m.a&&m.b)).length:0,lastReal=pre?Math.max(...Object.values(S.matches).filter(m=>m.r===0&&m.a&&m.b).map(m=>m.i)):-1;
-  const R=S.cfg.rounds,line='background:#fff',dash='#fff',LAB=56,CARD=64;
-  for(let r=0;r<R;r++){
-    let cs='';const H=80*2**r;   // chaque match du tour r occupe une « case » de hauteur H : la carte y est centrée, donc centrée entre ses deux matchs précédents
-    for(let i=0;i<S.cfg.size/2**(r+1);i++){
-      const m=S.matches[mk(r,i)];
-      if(pre&&r===0){if(i>lastReal)break;if(!(m&&m.a&&m.b)){cs+=`<div style="height:${H}px"></div>`;continue}}   // les exemptés n'ont pas de carte : ils apparaissent directement au tour suivant
-      const fed=!(pre&&r===1)||[S.matches[mk(0,2*i)],S.matches[mk(0,2*i+1)]].some(x=>x&&x.a&&x.b);
-      let conn=(r<R-1?`<div style="position:absolute;right:-12px;top:50%;width:12px;height:2px;${line}"></div><div style="position:absolute;right:-12px;width:2px;${i%2?'bottom:50%':'top:50%'};height:${H/2}px;${line}"></div>`:'')+(r>0&&fed?`<div style="position:absolute;left:-12px;top:50%;width:12px;height:2px;${line}"></div>`:'');
-      if(th&&R>=2&&r===R-2){   // traits en pointillés : demi-finales -> petite finale (sous la finale)
-        const L=i===0?H:2*H+LAB+CARD/2-(i*H+H/2);   // 1re demi-finale : jusqu'à la 2e ; 2e demi-finale : jusqu'à la petite finale (pas de superposition)
-        conn+=`<div style="position:absolute;right:-6px;top:50%;height:${L}px;border-left:2px dashed ${dash}"></div>`+(i===1?`<div style="position:absolute;right:-24px;top:calc(50% + ${L}px);width:18px;border-top:2px dashed ${dash}"></div>`:'');
-      }
-      cs+=`<div class="flex items-center" style="position:relative;height:${H}px"><div class="w-full">${m?card(m):''}</div><div style="position:absolute;left:0;top:0;right:0;bottom:0;opacity:.45;pointer-events:none">${conn}</div></div>`;
-    }
-    if(th&&r===R-1)cs+=`<div class="text-center" style="height:${LAB}px"><div class="text-sm font-bold">🥉 Petite finale</div><div class="leading-4 opacity-90" style="font-size:13px">perdants des demi-finales</div></div><div style="height:${CARD}px">${card(th)}</div>`;
-    cols+=`<div class="min-w-[9.5rem]"><div class="text-xs font-bold text-center mb-2 opacity-90">${rlabel(r)}</div>${cs}</div>`;
+  // Positions verticales : un match du tour suivant est centré entre ses matchs précédents (les matchs « exemptés » n'ont pas de carte)
+  const vis=(r,i)=>{const m=S.matches[mk(r,i)];return !!m&&!isBye(m)};
+  const Y=[Array.from({length:cntC(0)},(_,i)=>i*SLOT+SLOT/2)],F=[];
+  for(let r=0;r<R-1;r++){
+    const fl=Array.from({length:cntC(r+1)},()=>[]);
+    for(let i=0;i<cntC(r);i++)fl[routeC(r,i).t].push(i);
+    F[r+1]=fl;
+    Y[r+1]=fl.map(list=>{const v=list.filter(i=>vis(r,i)),use=v.length?v:list;return use.reduce((a,i)=>a+Y[r][i],0)/use.length});
   }
-  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p>${pre?`<p class="text-xs text-center opacity-80 mb-2">${nBye} joueur${nBye>1?'s sont exemptés':' est exempté'} du tour préliminaire et ${nBye>1?'entrent':'entre'} directement au tour suivant.</p>`:''}<div class="overflow-x-auto"><div class="flex gap-6 pb-1">${cols}</div></div>`;
+  let H=cntC(0)*SLOT;
+  const labTop=Y[R-1][0]+CARD/2+40,y3=labTop+LAB+CARD/2;
+  if(th)H=Math.max(H,y3+CARD/2+8);
+  const W='background:#fff',cols=[];
+  for(let r=0;r<R;r++){
+    let cards='',g='';
+    for(let i=0;i<cntC(r);i++){
+      if(!vis(r,i))continue;
+      cards+=`<div style="position:absolute;left:0;width:${CW}px;top:${Y[r][i]-CARD/2}px">${card(S.matches[mk(r,i)])}</div>`;
+      if(r<R-1){const y1=Y[r][i],y2=Y[r+1][routeC(r,i).t];
+        g+=`<div style="position:absolute;left:${CW}px;top:${y1-1}px;width:12px;height:2px;${W}"></div><div style="position:absolute;left:${CW+10}px;top:${Math.min(y1,y2)-1}px;width:2px;height:${Math.abs(y2-y1)+2}px;${W}"></div>`;
+      }
+    }
+    if(r>0)for(let t=0;t<cntC(r);t++)if(vis(r,t)&&F[r][t].some(i=>vis(r-1,i)))g+=`<div style="position:absolute;left:-12px;top:${Y[r][t]-1}px;width:12px;height:2px;${W}"></div>`;
+    if(th&&R>=2&&r===R-2){   // pointillés : demi-finales -> petite finale (sous la finale)
+      const ys=[0,1].filter(i=>vis(r,i)).map(i=>Y[r][i]).concat([y3]);
+      for(let k=0;k<ys.length-1;k++)g+=`<div style="position:absolute;left:${CW+5}px;top:${ys[k]}px;height:${ys[k+1]-ys[k]}px;border-left:2px dashed #fff"></div>`;
+      g+=`<div style="position:absolute;left:${CW+6}px;top:${y3-1}px;width:18px;border-top:2px dashed #fff"></div>`;
+    }
+    if(th&&r===R-1)cards+=`<div class="text-center" style="position:absolute;left:0;width:${CW}px;top:${labTop}px;height:${LAB}px"><div class="text-sm font-bold">🥉 Petite finale</div><div class="leading-4 opacity-90" style="font-size:13px">perdants des demi-finales</div></div><div style="position:absolute;left:0;width:${CW}px;top:${labTop+LAB}px">${card(th)}</div>`;
+    const byes=Array.from({length:cntC(r)},(_,i)=>S.matches[mk(r,i)]).filter(isBye);
+    const cap=byes.length===1?`<div class="opacity-80 truncate" style="font-size:11px">${byes[0].w||byes[0].a||byes[0].b?'Exempté(e) : '+pn(byes[0].w||byes[0].a||byes[0].b):'1 joueur exempté'}</div>`:byes.length>1?`<div class="opacity-80" style="font-size:11px">${byes.length} joueurs exemptés</div>`:'';
+    cols.push(`<div style="width:${CW}px;flex:none"><div class="text-center" style="height:36px"><div class="text-xs font-bold opacity-90">${rlabel(r)}</div>${cap}</div><div style="position:relative;height:${H}px"><div style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:.45;pointer-events:none">${g}</div>${cards}</div></div>`);
+  }
+  return out+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-6 pb-1">${cols.join('')}</div></div>`;
 }
 function openMatch(k){watch=k;render();window.scrollTo(0,0)}
 function matchView(k){
@@ -299,7 +316,7 @@ function adminView(){
     <textarea id="names" rows="8" class="w-full rounded-xl p-3 text-slate-900" placeholder="Alice&#10;Bruno&#10;Chloé&#10;David"></textarea>
     <button onclick="createT()" class="w-full mt-3 py-4 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Générer le tournoi 🚀</button>`);
   let h=startCard()+wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
-  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
+  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}${S.cfg.started===false?` <button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
   const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
   const bt=(l,c)=>`<button onclick="${c}" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">${l}</button>`;
   h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
@@ -310,6 +327,14 @@ function adminView(){
   return h;
 }
 function drawQR(){const el=$('#qr');if(!el||!window.QRCode)return;el.innerHTML='';try{new QRCode(el,{text:location.origin+location.pathname,width:200,height:200})}catch(e){}}
+async function removeP(id){
+  const p=S.cfg.players.find(x=>x.id===id);if(!p)return;
+  if(S.cfg.players.length<=2){alert('Il faut garder au moins 2 joueurs.');return}
+  if(!confirm('Effacer '+p.name+' du tournoi ? Le tirage au sort sera refait avec les joueurs restants (les codes des autres joueurs ne changent pas).'))return;
+  try{await api('removeplayer',{id});S=await loadState();adm=await api('admin')}
+  catch(e){alert(e.message==='started'?'Le tournoi est déjà lancé : on ne peut plus effacer de joueur.':e.message==='min2'?'Il faut garder au moins 2 joueurs.':'Erreur : '+e.message)}
+  lastSig='';render();
+}
 async function saveStart(clear){
   const v=$('#startAt').value;
   if(!clear&&!v){alert('Choisis une date et une heure.');return}
