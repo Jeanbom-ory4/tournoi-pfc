@@ -21,7 +21,14 @@ const hash = (s) => crypto.createHash('sha256').update(s + SECRET).digest('hex')
 const sign = (id, tid) => `${id}.${tid}.` + crypto.createHmac('sha256', SECRET).update(`${id}.${tid}`).digest('hex').slice(0, 32);
 const who = (t, tid) => { const id = String(t || '').split('.')[0]; return id && sign(id, tid || '') === t ? id : null; };
 const isAdmin = (k) => !!ADMIN && String(k || '').trim() === ADMIN.trim();
-const ids = (cfg) => { const o = []; for (let r = 0; r < cfg.rounds; r++) for (let i = 0; i < cfg.size / 2 ** (r + 1); i++) o.push(mk(r, i)); if (cfg.rounds >= 2) o.push('third'); return o; };
+const cnt = (cfg, r) => cfg.counts ? cfg.counts[r] : cfg.size / 2 ** (r + 1);   // nombre de matchs du tour r (ancien format : puissance de 2)
+const ids = (cfg) => { const o = []; for (let r = 0; r < cfg.rounds; r++) for (let i = 0; i < cnt(cfg, r); i++) o.push(mk(r, i)); if (cfg.rounds >= 2) o.push('third'); return o; };
+// Où va le gagnant du match i du tour r (dans le tour r+1). Quand un tour a un nombre impair de joueurs, un joueur est exempté ;
+// l'exempté alterne entre la fin (tours pairs) et le début (tours impairs) du tableau, pour ne pas favoriser toujours le même joueur.
+const route = (cfg, r, i) => {
+  if (cnt(cfg, r) % 2 === 1 && (r + 1) % 2 === 1) return i === 0 ? { t: 0, side: 'a' } : { t: ((i - 1) >> 1) + 1, side: (i - 1) % 2 ? 'b' : 'a' };
+  return { t: i >> 1, side: i % 2 ? 'b' : 'a' };
+};
 
 async function load() {
   const cfg = await redis.get('pfc:cfg');
@@ -32,7 +39,7 @@ async function load() {
 }
 // Vue publique : ni PIN, et le coup en attente n'est JAMAIS renvoyé (seulement qui a joué)
 const pub = ({ cfg, matches }) => ({
-  cfg: cfg && { players: cfg.players.map(({ id, name }) => ({ id, name })), rounds: cfg.rounds, size: cfg.size, hours: hrs(DELAY), started: cfg.started !== false, tid: cfg.tid || '', startAt: cfg.startAt || null },
+  cfg: cfg && { players: cfg.players.map(({ id, name }) => ({ id, name })), rounds: cfg.rounds, size: cfg.size || null, counts: cfg.counts || null, hours: hrs(DELAY), started: cfg.started !== false, tid: cfg.tid || '', startAt: cfg.startAt || null },
   matches: Object.fromEntries(Object.entries(matches).map(([k, { rem, ...m }]) => [k, { ...m, pend: m.pend ? { by: m.pend.by } : null }])),
 });
 const out = (st) => ({ ...pub(st), now: Date.now() });
@@ -46,9 +53,10 @@ async function finish(cfg, m, win, ff) {
   m.w = win; m.pend = null; m.due = null;
   if (ff) m.ff = ff;
   if (m.r + 1 < cfg.rounds && m.id !== 'third') {
-    const nk = 'pfc:m:' + mk(m.r + 1, m.i >> 1), nm = await redis.get(nk);
-    nm[m.i % 2 ? 'b' : 'a'] = win;
-    await redis.set(nk, nm);
+    const { t, side } = route(cfg, m.r, m.i), nk = 'pfc:m:' + mk(m.r + 1, t), nm = await redis.get(nk);
+    nm[side] = win;
+    if (nm.bye) await finish(cfg, nm, win, null); // match « exempté » : le joueur passe directement au tour suivant
+    else await redis.set(nk, nm);
   }
   // Le perdant d'une demi-finale rejoint la petite finale (sauf s'il est éliminé pour dépassement de délai)
   if (cfg.rounds >= 2 && m.id !== 'third' && m.r === cfg.rounds - 2) {
@@ -74,22 +82,33 @@ async function sweep(st) {
   return changed ? load() : st;
 }
 const newPin = () => Array.from({ length: 4 }, () => CHARS[crypto.randomInt(CHARS.length)]).join('');
-// Construit le tableau (matchs, exemptés, petite finale) à partir de la liste des joueurs
+// Construit le tableau à partir de la liste des joueurs : tous les joueurs jouent dès le tour 1 (par paires) ;
+// si le nombre de joueurs d'un tour est impair, un joueur est exempté et passe directement au tour suivant.
 function build(players, doShuffle) {
   const order = players.map((p) => p.id);
   if (doShuffle) for (let i = order.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [order[i], order[j]] = [order[j], order[i]]; }
-  let size = 2; while (size < order.length) size *= 2;
-  const rounds = Math.log2(size), slots = Array(size).fill(null);
-  order.forEach((id, k) => { slots[k < size / 2 ? 2 * k : 2 * (k - size / 2) + 1] = id; });
-  const M = {};
-  for (let r = 0; r < rounds; r++) for (let i = 0; i < size / 2 ** (r + 1); i++)
-    M[mk(r, i)] = { id: mk(r, i), r, i, a: r ? null : slots[2 * i], b: r ? null : slots[2 * i + 1], sa: 0, sb: 0, hist: [], pend: null, w: null, need: r === rounds - 1 ? 5 : 3 };
+  const counts = []; for (let p = order.length; ;) { const m = Math.ceil(p / 2); counts.push(m); if (m === 1) break; p = m; }
+  const rounds = counts.length, M = {};
+  for (let r = 0; r < rounds; r++) for (let i = 0; i < counts[r]; i++)
+    M[mk(r, i)] = { id: mk(r, i), r, i, a: null, b: null, sa: 0, sb: 0, hist: [], pend: null, w: null, need: r === rounds - 1 ? 5 : 3 };
   if (rounds >= 2) M.third = { id: 'third', r: rounds - 1, i: 0, a: null, b: null, sa: 0, sb: 0, hist: [], pend: null, w: null, need: 3, got: 0 };
-  for (let i = 0; i < size / 2; i++) {
-    const m = M[mk(0, i)];
-    if (!m.a || !m.b) { m.w = m.a || m.b; if (rounds > 1) M[mk(1, i >> 1)][i % 2 ? 'b' : 'a'] = m.w; if (rounds === 2) M.third.got++; }
+  order.forEach((id, k) => { M[mk(0, k >> 1)][k % 2 ? 'b' : 'a'] = id; });
+  for (let r = 0; r < rounds; r++) {
+    const p = r === 0 ? order.length : counts[r - 1];
+    if (p % 2 === 1) M[mk(r, r % 2 === 1 ? 0 : counts[r] - 1)].bye = true;
   }
-  return { rounds, size, M };
+  const cfg = { rounds, counts };
+  for (let i = 0; i < counts[0]; i++) {   // exempté(s) du tour 1 : ils avancent tout de suite
+    let m = M[mk(0, i)];
+    while (m && m.bye && !m.w && (m.a || m.b)) {
+      m.w = m.a || m.b;
+      if (rounds >= 2 && m.r === rounds - 2) M.third.got++;   // demi-finale exemptée : pas de perdant
+      if (m.r + 1 >= rounds) break;
+      const { t, side } = route(cfg, m.r, m.i), nm = M[mk(m.r + 1, t)];
+      nm[side] = m.w; m = nm;
+    }
+  }
+  return { rounds, counts, M };
 }
 
 module.exports = async (req, res) => {
@@ -116,7 +135,7 @@ module.exports = async (req, res) => {
 
     if (a === 'play') {
       const c0 = await redis.get('pfc:cfg'), me = c0 && who(b.token, c0.tid);
-      if (!me) return res.status(401).json({ error: 'auth' });
+      if (!me || !c0.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
       if (!['r', 'f', 'c'].includes(b.mv)) return res.status(400).json({ error: 'coup' });
       if (c0.started === false) return res.status(409).json({ error: 'notstarted' });
       const st = await sweep(await load()), cfg = st.cfg, m = st.matches[b.id], key = 'pfc:m:' + b.id;
@@ -140,7 +159,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -169,6 +188,23 @@ module.exports = async (req, res) => {
         cfg.startAt = at; await redis.set('pfc:cfg', cfg);
         return res.json({ ok: 1 });
       }
+      if (a === 'removeplayer') {
+        const cfg = await redis.get('pfc:cfg');
+        if (!cfg) return res.status(400).json({ error: 'tournoi' });
+        if (cfg.started !== false) return res.status(409).json({ error: 'started' });
+        if (!cfg.players.some((p) => p.id === b.id)) return res.status(400).json({ error: 'joueur' });
+        if (cfg.players.length <= 2) return res.status(400).json({ error: 'min2' });
+        const players = cfg.players.filter((p) => p.id !== b.id), pins = (await redis.get('pfc:pins')) || {};
+        delete pins[b.id];
+        const { rounds, counts, M } = build(players, true); // nouveau tirage au sort avec les joueurs restants ; leurs codes ne changent pas
+        const { size: _ancien, ...cfgRest } = cfg;
+        await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
+        await Promise.all([
+          redis.del(lockKey(cfg, b.id)), redis.set('pfc:cfg', { ...cfgRest, players, rounds, counts }), redis.set('pfc:pins', pins),
+          ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
+        ]);
+        return res.json({ ok: 1 });
+      }
       if (a === 'addplayers') {
         const cfg = await redis.get('pfc:cfg');
         if (!cfg) return res.status(400).json({ error: 'tournoi' });
@@ -182,10 +218,11 @@ module.exports = async (req, res) => {
         const pins = (await redis.get('pfc:pins')) || {}, players = [...cfg.players];
         let n = players.reduce((m, p) => Math.max(m, Number(p.id.slice(1)) + 1), 0);
         for (const name of add) { const id = 'p' + n++, pin = newPin(); pins[id] = pin; players.push({ id, name, h: hash(pin + id) }); }
-        const { rounds, size, M } = build(players, true); // nouveau tirage au sort ; les codes et connexions existants restent valables
+        const { rounds, counts, M } = build(players, true);
+        const { size: _ancien, ...cfgRest } = cfg; // nouveau tirage au sort ; les codes et connexions existants restent valables
         await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
         await Promise.all([
-          redis.set('pfc:cfg', { ...cfg, players, rounds, size }), redis.set('pfc:pins', pins),
+          redis.set('pfc:cfg', { ...cfgRest, players, rounds, counts }), redis.set('pfc:pins', pins),
           ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
         ]);
         return res.json({ ok: 1, added: add.length });
@@ -212,9 +249,9 @@ module.exports = async (req, res) => {
       for (let i = names.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [names[i], names[j]] = [names[j], names[i]]; }
       const players = [], pins = {};
       names.forEach((n, i) => { const id = 'p' + i, pin = newPin(); pins[id] = pin; players.push({ id, name: n.name, h: hash(pin + id) }); });
-      const { rounds, size, M } = build(players, false);
+      const { rounds, counts, M } = build(players, false);
       await Promise.all([
-        redis.set('pfc:cfg', { players, rounds, size, started: false, tid: crypto.randomBytes(4).toString('hex') }), redis.set('pfc:pins', pins),
+        redis.set('pfc:cfg', { players, rounds, counts, started: false, tid: crypto.randomBytes(4).toString('hex') }), redis.set('pfc:pins', pins),
         ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
       ]);
       return res.json({ ok: 1 });
