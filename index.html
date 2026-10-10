@@ -36,6 +36,7 @@ const rlabel=r=>{const k=S.cfg.rounds-r;return k===1?'Finale':k===2?'Demi-finale
 const Q_LOSE="« Le vrai maître n'est pas celui qui gagne toujours, mais celui qui sait lire le monde avec patience et simplicité. »";
 const Q_THIRD="« La victoire est belle, mais la plus grande richesse reste le chemin parcouru ensemble et le rire partagé. »";
 const quoteP=q=>`<p class="text-center italic mt-4 text-lg leading-relaxed">${q}</p>`;
+const CAL=`<svg viewBox="0 0 24 24" width="1.15em" height="1.15em" style="display:inline-block;vertical-align:-.2em" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="#fff"/><path d="M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v3H3z" fill="#ef4444"/><rect x="7" y="2.5" width="2.4" height="5" rx="1.2" fill="#6b7280"/><rect x="14.6" y="2.5" width="2.4" height="5" rx="1.2" fill="#6b7280"/><g fill="#cbd5e1"><rect x="6.5" y="13" width="3" height="2.4" rx=".6"/><rect x="10.5" y="13" width="3" height="2.4" rx=".6"/><rect x="14.5" y="13" width="3" height="2.4" rx=".6"/><rect x="6.5" y="16.7" width="3" height="2.4" rx=".6"/><rect x="10.5" y="16.7" width="3" height="2.4" rx=".6"/></g></svg>`;
 const fmtWhen=ms=>new Date(ms).toLocaleString('fr-FR',{timeZone:'Europe/Paris',weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
 const toInput=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*60000).toISOString().slice(0,16);
 const mlabel=m=>m.id==='third'?'Petite finale (3e place)':rlabel(m.r);
@@ -85,10 +86,10 @@ function myMatch(){
 function jeuView(){
   if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
   const id=me(),when=S.cfg.started===false&&S.cfg.startAt?fmtWhen(S.cfg.startAt):'';
-  if(!id)return (when?wrap('<p class="text-center font-bold">📅 Coup d\'envoi prévu : '+when+'</p>'):'')+loginView();
+  if(!id)return (when?wrap('<p class="text-center font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>'):'')+loginView();
   let head=`<div class="flex justify-between items-center mb-3"><span class="font-bold">👋 ${pn(id)}</span><button onclick="logout()" class="text-sm underline opacity-80">Changer de joueur</button></div>`;
   if(window.Notification&&Notification.permission==='default')head+=`<button onclick="askNotif()" class="w-full mb-3 py-2 rounded-xl card text-sm font-bold">🔔 Activer les alertes</button>`;
-  if(S.cfg.started===false)return wrap(head+'<p class="text-center text-4xl">🚦</p><p class="text-center font-bold mt-2">Le tournoi n\'a pas encore commencé.</p><p class="text-center mt-2 text-sm">L\'organisateur donnera bientôt le coup d\'envoi. Reviens un peu plus tard !</p>'+(when?'<p class="text-center mt-3 font-bold">📅 Coup d\'envoi prévu : '+when+'</p>':''));
+  if(S.cfg.started===false)return wrap(head+'<p class="text-center text-4xl">🚦</p><p class="text-center font-bold mt-2">Le tournoi n\'a pas encore commencé.</p><p class="text-center mt-2 text-sm">L\'organisateur donnera bientôt le coup d\'envoi. Reviens un peu plus tard !</p>'+(when?'<p class="text-center mt-3 font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>':''));
   const m=myMatch();
   if(!m){
     const fin=S.matches[mk(S.cfg.rounds-1,0)];
@@ -283,7 +284,7 @@ function startCard(){
   if(S.cfg.started!==false)return wrap(`<p class="font-bold">✅ Tournoi lancé</p>`);
   const cur=S.cfg.startAt;
   return wrap(`<p class="font-bold mb-1">🚦 Le tournoi n'a pas encore démarré</p><p class="text-sm opacity-90 mb-3">Les joueurs peuvent se connecter et voir le tableau, mais ils ne pourront pas jouer tant que tu n'as pas lancé le tournoi.</p><button onclick="startT()" class="w-full py-4 rounded-2xl bg-emerald-400 text-emerald-950 font-black text-lg">🚀 Lancer le tournoi</button>`)
-    +wrap(`<p class="font-bold mb-1">📅 Annoncer la date de lancement</p><p class="text-sm opacity-90 mb-2">Les joueurs la voient dans la rubrique « Jouer ». Le tournoi ne démarre pas tout seul : c'est toi qui appuies sur « Lancer le tournoi ».</p>${cur?`<p class="text-sm font-semibold mb-2">Annoncé : ${fmtWhen(cur)}</p>`:''}<input id="startAt" type="datetime-local" value="${cur?toInput(cur):''}" class="w-full rounded-xl p-3 text-slate-900"><div class="flex gap-2 mt-2"><button onclick="saveStart(false)" class="flex-1 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Enregistrer</button>${cur?'<button onclick="saveStart(true)" class="px-4 py-3 rounded-2xl card font-bold">Effacer</button>':''}</div>`)
+    +wrap(`<p class="font-bold mb-1">${CAL} Annoncer la date de lancement</p><p class="text-sm opacity-90 mb-2">Les joueurs la voient dans la rubrique « Jouer ». Le tournoi ne démarre pas tout seul : c'est toi qui appuies sur « Lancer le tournoi ».</p>${cur?`<p class="text-sm font-semibold mb-2">Annoncé : ${fmtWhen(cur)}</p>`:''}<input id="startAt" type="datetime-local" value="${cur?toInput(cur):''}" class="w-full rounded-xl p-3 text-slate-900"><div class="flex gap-2 mt-2"><button onclick="saveStart(false)" class="flex-1 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Enregistrer</button>${cur?'<button onclick="saveStart(true)" class="px-4 py-3 rounded-2xl card font-bold">Effacer</button>':''}</div>`)
     +wrap(`<p class="font-bold mb-1">➕ Ajouter des joueurs</p><p class="text-sm opacity-90 mb-2">Possible tant que le tournoi n'est pas lancé. Un prénom par ligne. Le tirage au sort est refait avec tous les joueurs ; les codes existants ne changent pas, et les nouveaux codes apparaissent dans la liste ci-dessous.</p><textarea id="newNames" rows="4" class="w-full rounded-xl p-3 text-slate-900" placeholder="Prénom&#10;Prénom"></textarea><button onclick="addPlayers()" class="w-full mt-2 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Ajouter au tournoi</button>`);
 }
 function adminView(){
