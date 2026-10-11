@@ -159,7 +159,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -186,6 +186,19 @@ module.exports = async (req, res) => {
         const at = b.at ? Number(b.at) : null;
         if (b.at && !Number.isFinite(at)) return res.status(400).json({ error: 'date' });
         cfg.startAt = at; await redis.set('pfc:cfg', cfg);
+        return res.json({ ok: 1 });
+      }
+      if (a === 'renameplayer') {
+        const cfg = await redis.get('pfc:cfg');
+        if (!cfg) return res.status(400).json({ error: 'tournoi' });
+        if (cfg.started !== false) return res.status(409).json({ error: 'started' });
+        const p = cfg.players.find((x) => x.id === b.id);
+        if (!p) return res.status(400).json({ error: 'joueur' });
+        const name = String(b.name || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+        if (!name) return res.status(400).json({ error: 'vide' });
+        if (cfg.players.some((x) => x.id !== p.id && x.name.trim().toLowerCase() === name.toLowerCase())) return res.status(400).json({ error: 'doublon' });
+        p.name = name; // l'identifiant, le code et le tirage au sort ne changent pas
+        await redis.set('pfc:cfg', cfg);
         return res.json({ ok: 1 });
       }
       if (a === 'removeplayer') {
