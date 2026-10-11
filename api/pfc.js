@@ -133,6 +133,17 @@ module.exports = async (req, res) => {
       return res.json({ token: sign(p.id, cfg.tid || '') });
     }
 
+    if (a === 'quit') {   // abandon volontaire : le joueur est éliminé, son adversaire passe au tour suivant
+      const c0 = await redis.get('pfc:cfg'), me = c0 && who(b.token, c0.tid);
+      if (!me || !c0.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
+      if (c0.started === false) return res.status(409).json({ error: 'notstarted' });
+      const st = await sweep(await load()), m = st.matches[b.id];
+      if (!m || m.w || !m.a || !m.b || (m.a !== me && m.b !== me)) return res.status(400).json({ error: 'match' });
+      m.ab = me;
+      await finish(st.cfg, m, m.a === me ? m.b : m.a, me);
+      return res.json(out(await load()));
+    }
+
     if (a === 'play') {
       const c0 = await redis.get('pfc:cfg'), me = c0 && who(b.token, c0.tid);
       if (!me || !c0.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
