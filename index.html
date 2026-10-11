@@ -75,7 +75,7 @@ function render(){
   const tabs=[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' 🔴':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
-  const sh=$('#shell');if(sh)sh.style.maxWidth=(tab==='tableau'&&!watch&&bigBoard&&window.innerWidth>=768)?'none':(window.innerWidth>=768?'42rem':'28rem');   // largeur fixée en style (indépendant de Tailwind)
+  const sh=$('#shell');if(sh)sh.style.maxWidth=window.innerWidth>=768?'42rem':'28rem';   // largeur fixée en style (indépendant de Tailwind)
   app.innerHTML=nav+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
@@ -252,7 +252,7 @@ function bracketView(){
     cols.push(`<div style="width:${CW}px;flex:none"><div class="text-center" style="height:36px"><div class="text-xs font-bold opacity-90">${rlabel(r)}</div>${cap}</div><div style="position:relative;height:${H}px"><div style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:.45;pointer-events:none">${g}</div>${cards}</div></div>`);
   }
   const bigBtn=window.innerWidth>=768?`<div class="text-center mb-2"><button onclick="bigBoard=!bigBoard;render()" class="px-3 py-1.5 rounded-xl card text-xs font-bold">${bigBoard?'↙ Vue réduite':'⛶ Tableau complet'}</button></div>`:'';
-  return out+bigBtn+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto"><div class="flex gap-6 pb-1" style="margin:0 auto;width:max-content">${cols.join('')}</div></div>`;
+  return out+bigBtn+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto" ${bigBoard&&window.innerWidth>=768?`style="width:calc(100vw - 48px);margin-left:calc(50% - 50vw + 24px)"`:''}><div class="flex gap-6 pb-1" style="margin:0 auto;width:max-content">${cols.join('')}</div></div>`;
 }
 function openMatch(k){watch=k;render();window.scrollTo(0,0)}
 function matchView(k){
