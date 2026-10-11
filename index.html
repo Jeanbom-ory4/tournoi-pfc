@@ -75,7 +75,7 @@ function render(){
   const tabs=[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' 🔴':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
-  const sh=$('#shell');if(sh)sh.className='mx-auto p-3 '+(tab==='tableau'?'max-w-md md:max-w-none':'max-w-md md:max-w-2xl');
+  const sh=$('#shell');if(sh)sh.className='mx-auto p-3 '+(tab==='tableau'&&!watch?'max-w-md md:max-w-none':'max-w-md md:max-w-2xl');
   app.innerHTML=nav+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
