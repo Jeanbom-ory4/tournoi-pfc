@@ -213,10 +213,11 @@ function bracketView(){
     const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
     return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:${CARD}px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
   };
+  const byeCard=m=>{const pid=m.w||m.a||m.b;return `<div style="height:${CARD}px" class="card p-1 text-sm flex flex-col justify-center"><div class="px-2 ${pid&&pid===id?'ring-1 ring-yellow-300 rounded':''}"><div class="truncate font-bold">${pid?pn(pid):'—'}</div><div class="opacity-80" style="font-size:12px">Exempté(e)</div></div></div>`};
   let out='';
   if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
   // Positions verticales : un match du tour suivant est centré entre ses matchs précédents (les matchs « exemptés » n'ont pas de carte)
-  const vis=(r,i)=>{const m=S.matches[mk(r,i)];return !!m&&!isBye(m)};
+  const vis=(r,i)=>{const m=S.matches[mk(r,i)];return !!m&&(r===0||!isBye(m))};
   const Y=[Array.from({length:cntC(0)},(_,i)=>i*SLOT+SLOT/2)],F=[];
   for(let r=0;r<R-1;r++){
     const fl=Array.from({length:cntC(r+1)},()=>[]);
@@ -232,7 +233,7 @@ function bracketView(){
     let cards='',g='';
     for(let i=0;i<cntC(r);i++){
       if(!vis(r,i))continue;
-      cards+=`<div style="position:absolute;left:0;width:${CW}px;top:${Y[r][i]-CARD/2}px">${card(S.matches[mk(r,i)])}</div>`;
+      cards+=`<div style="position:absolute;left:0;width:${CW}px;top:${Y[r][i]-CARD/2}px">${isBye(S.matches[mk(r,i)])?byeCard(S.matches[mk(r,i)]):card(S.matches[mk(r,i)])}</div>`;
       if(r<R-1){const y1=Y[r][i],y2=Y[r+1][routeC(r,i).t];
         g+=`<div style="position:absolute;left:${CW}px;top:${y1-1}px;width:12px;height:2px;${W}"></div><div style="position:absolute;left:${CW+10}px;top:${Math.min(y1,y2)-1}px;width:2px;height:${Math.abs(y2-y1)+2}px;${W}"></div>`;
       }
@@ -244,7 +245,7 @@ function bracketView(){
       g+=`<div style="position:absolute;left:${CW+6}px;top:${y3-1}px;width:18px;border-top:2px dashed #fff"></div>`;
     }
     if(th&&r===R-1)cards+=`<div class="text-center" style="position:absolute;left:0;width:${CW}px;top:${labTop}px;height:${LAB}px"><div class="text-sm font-bold">🥉 Petite finale</div><div class="leading-4 opacity-90" style="font-size:13px">perdants des demi-finales</div></div><div style="position:absolute;left:0;width:${CW}px;top:${labTop+LAB}px">${card(th)}</div>`;
-    const byes=Array.from({length:cntC(r)},(_,i)=>S.matches[mk(r,i)]).filter(isBye);
+    const byes=r===0?[]:Array.from({length:cntC(r)},(_,i)=>S.matches[mk(r,i)]).filter(isBye);
     const cap=byes.length===1?`<div class="opacity-80 truncate" style="font-size:11px">${byes[0].w||byes[0].a||byes[0].b?'Exempté(e) : '+pn(byes[0].w||byes[0].a||byes[0].b):'1 joueur exempté'}</div>`:byes.length>1?`<div class="opacity-80" style="font-size:11px">${byes.length} joueurs exemptés</div>`:'';
     cols.push(`<div style="width:${CW}px;flex:none"><div class="text-center" style="height:36px"><div class="text-xs font-bold opacity-90">${rlabel(r)}</div>${cap}</div><div style="position:relative;height:${H}px"><div style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:.45;pointer-events:none">${g}</div>${cards}</div></div>`);
   }
