@@ -196,11 +196,12 @@ module.exports = async (req, res) => {
         if (cfg.players.length <= 2) return res.status(400).json({ error: 'min2' });
         const players = cfg.players.filter((p) => p.id !== b.id), pins = (await redis.get('pfc:pins')) || {};
         delete pins[b.id];
+        const nextId = Math.max(cfg.nextId || 0, ...cfg.players.map((p) => Number(p.id.slice(1)) + 1)); // l'identifiant retiré ne sera jamais réattribué
         const { rounds, counts, M } = build(players, true); // nouveau tirage au sort avec les joueurs restants ; leurs codes ne changent pas
         const { size: _ancien, ...cfgRest } = cfg;
         await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
         await Promise.all([
-          redis.del(lockKey(cfg, b.id)), redis.set('pfc:cfg', { ...cfgRest, players, rounds, counts }), redis.set('pfc:pins', pins),
+          redis.del(lockKey(cfg, b.id)), redis.set('pfc:cfg', { ...cfgRest, players, rounds, counts, nextId }), redis.set('pfc:pins', pins),
           ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
         ]);
         return res.json({ ok: 1 });
@@ -216,13 +217,13 @@ module.exports = async (req, res) => {
         }
         if (!add.length) return res.status(400).json({ error: 'none' });
         const pins = (await redis.get('pfc:pins')) || {}, players = [...cfg.players];
-        let n = players.reduce((m, p) => Math.max(m, Number(p.id.slice(1)) + 1), 0);
+        let n = Math.max(cfg.nextId || 0, players.reduce((m, p) => Math.max(m, Number(p.id.slice(1)) + 1), 0)); // un identifiant retiré n'est jamais réutilisé
         for (const name of add) { const id = 'p' + n++, pin = newPin(); pins[id] = pin; players.push({ id, name, h: hash(pin + id) }); }
         const { rounds, counts, M } = build(players, true);
         const { size: _ancien, ...cfgRest } = cfg; // nouveau tirage au sort ; les codes et connexions existants restent valables
         await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
         await Promise.all([
-          redis.set('pfc:cfg', { ...cfgRest, players, rounds, counts }), redis.set('pfc:pins', pins),
+          redis.set('pfc:cfg', { ...cfgRest, players, rounds, counts, nextId: n }), redis.set('pfc:pins', pins),
           ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
         ]);
         return res.json({ ok: 1, added: add.length });
@@ -251,7 +252,7 @@ module.exports = async (req, res) => {
       names.forEach((n, i) => { const id = 'p' + i, pin = newPin(); pins[id] = pin; players.push({ id, name: n.name, h: hash(pin + id) }); });
       const { rounds, counts, M } = build(players, false);
       await Promise.all([
-        redis.set('pfc:cfg', { players, rounds, counts, started: false, tid: crypto.randomBytes(4).toString('hex') }), redis.set('pfc:pins', pins),
+        redis.set('pfc:cfg', { players, rounds, counts, nextId: players.length, started: false, tid: crypto.randomBytes(4).toString('hex') }), redis.set('pfc:pins', pins),
         ...Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)),
       ]);
       return res.json({ ok: 1 });
