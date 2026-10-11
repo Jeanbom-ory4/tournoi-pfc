@@ -319,7 +319,7 @@ function adminView(){
     <textarea id="names" rows="8" class="w-full rounded-xl p-3 text-slate-900" placeholder="Alice&#10;Bruno&#10;Chloé&#10;David"></textarea>
     <button onclick="createT()" class="w-full mt-3 py-4 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Générer le tournoi 🚀</button>`);
   let h=startCard()+wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
-  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}${S.cfg.started===false?` <button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
+  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}${S.cfg.started===false?` <button onclick="renameP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Modifier</button><button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
   const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
   const bt=(l,c)=>`<button onclick="${c}" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">${l}</button>`;
   h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
@@ -330,6 +330,14 @@ function adminView(){
   return h;
 }
 function drawQR(){const el=$('#qr');if(!el||!window.QRCode)return;el.innerHTML='';try{new QRCode(el,{text:location.origin+location.pathname,width:200,height:200})}catch(e){}}
+async function renameP(id){
+  const p=S.cfg.players.find(x=>x.id===id);if(!p)return;
+  const v=prompt('Nouveau nom pour '+p.name+' :',p.name);
+  if(v===null||!v.trim()||v.trim()===p.name)return;
+  try{await api('renameplayer',{id,name:v});S=await loadState();adm=await api('admin')}
+  catch(e){alert(e.message==='started'?'Le tournoi est déjà lancé : on ne peut plus modifier de nom.':e.message==='doublon'?'Ce nom existe déjà dans la liste.':e.message==='vide'?'Le nom ne peut pas être vide.':'Erreur : '+e.message)}
+  lastSig='';render();
+}
 async function removeP(id){
   const p=S.cfg.players.find(x=>x.id===id);if(!p)return;
   if(S.cfg.players.length<=2){alert('Il faut garder au moins 2 joueurs.');return}
