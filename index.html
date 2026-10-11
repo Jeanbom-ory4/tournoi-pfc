@@ -12,7 +12,7 @@ body{margin:0;min-height:100vh;color:#fff;background:linear-gradient(160deg,var(
 .pop{animation:pp .5s}@keyframes pp{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 button{touch-action:manipulation}
 </style></head>
-<body><div id="shell" class="max-w-md mx-auto p-3"><h1 id="ttl" class="text-center text-2xl font-black py-2"></h1><div id="app"></div></div>
+<body><div id="shell" class="mx-auto p-3" style="max-width:28rem"><h1 id="ttl" class="text-center text-2xl font-black py-2"></h1><div id="app"></div></div>
 <script>
 const STONE='<svg viewBox="2 7 60 52" width="1.3em" height="1.13em" style="display:inline-block;vertical-align:-.2em" aria-label="Pierre"><path d="M9 45C5 34 11 22 21 18C27 11 40 11 46 18C56 22 61 34 56 45C54 53 44 55 32 55C20 55 11 53 9 45Z" fill="#9ca3af" stroke="#4b5563" stroke-width="3" stroke-linejoin="round"/><path d="M10 45C12 51 20 55 32 55C44 55 54 52 56 45C50 49 40 50 31 49C21 48 14 47 10 45Z" fill="#6b7280"/><path d="M19 27C23 20 31 18 38 19C32 21 27 24 25 31Z" fill="#e5e7eb"/><path d="M40 25L35 34L42 39" fill="none" stroke="#4b5563" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const E={r:STONE,f:'📄',c:'✂️'},N={r:'Pierre',f:'Feuille',c:'Ciseaux'};
@@ -75,7 +75,7 @@ function render(){
   const tabs=[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' 🔴':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
-  const sh=$('#shell');if(sh)sh.className='mx-auto p-3 '+(tab==='tableau'&&!watch?'max-w-md md:max-w-none':'max-w-md md:max-w-2xl');
+  const sh=$('#shell');if(sh)sh.style.maxWidth=(tab==='tableau'&&!watch&&window.innerWidth>=768)?'none':(window.innerWidth>=768?'42rem':'28rem');   // largeur fixée en style (indépendant de Tailwind)
   app.innerHTML=nav+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
