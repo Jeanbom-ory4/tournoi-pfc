@@ -37,7 +37,7 @@ const mk=(r,i)=>`m${r}_${i}`;
 const isBye=m=>!!m&&(!!m.bye||(m.r===0&&!(m.a&&m.b)&&!!m.w));
 const cntC=r=>S.cfg.counts?S.cfg.counts[r]:S.cfg.size/2**(r+1);
 const routeC=(r,i)=>(cntC(r)%2===1&&(r+1)%2===1)?{t:i===0?0:((i-1)>>1)+1}:{t:i>>1};
-const rlabel=r=>{const k=S.cfg.rounds-r;if(k===1)return 'Finale';if(k===2)return 'Demi-finales';if(k===3&&cntC(r)===4)return 'Quarts de finale';return 'Tour '+(r+1)};
+const rlabel=r=>{const k=S.cfg.rounds-r;if(k===1)return 'Finale';if(k===2)return 'Demi-finales';if(k===3&&(cntC(r)===4||cntC(r)===3))return 'Quarts de finale';return 'Tour '+(r+1)};
 const Q_LOSE="« Le vrai maître n'est pas celui qui gagne toujours, mais celui qui sait lire le monde avec patience et simplicité. »";
 const Q_THIRD="« La victoire est belle, mais la plus grande richesse reste le chemin parcouru ensemble et le rire partagé. »";
 const quoteP=q=>`<p class="text-center italic mt-4 text-lg leading-relaxed">${q}</p>`;
