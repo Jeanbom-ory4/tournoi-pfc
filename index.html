@@ -11,8 +11,6 @@ body{margin:0;min-height:100vh;color:#fff;background:linear-gradient(160deg,var(
 .shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .pop{animation:pp .5s}@keyframes pp{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 button{touch-action:manipulation}
-.won-bg{background:#46b324}   /* vert de la photo (essai) */
-.lost-bg{background:#d81f2d}   /* rouge de la photo (essai) */
 .win-ov{position:fixed;inset:0;z-index:60;overflow:hidden;background:#120824;cursor:pointer;opacity:0;animation:wfi .8s forwards}
 .win-ov.out{animation:wfo .65s forwards}
 @keyframes wfi{to{opacity:1}}@keyframes wfo{from{opacity:1}to{opacity:0}}
@@ -152,7 +150,7 @@ function jeuView(){
   }
   let last='';
   if(m.hist&&m.hist.length){
-    const h=m.hist[m.hist.length-1],r=h.w==='='?['🤝 Égalité, on rejoue','bg-slate-500']:h.w===side?['🎉 Tour gagné !','won-bg']:['😬 Tour perdu','lost-bg'];
+    const h=m.hist[m.hist.length-1],r=h.w==='='?['🤝 Égalité, on rejoue','bg-slate-500']:h.w===side?['🎉 Tour gagné !','bg-emerald-500']:['😬 Tour perdu','bg-rose-500'];
     const pk=m.id+'|'+m.hist.length,pc=popKey===pk?'':' pop';popKey=pk;   // l'animation ne se joue qu'à la révélation, pas à chaque clic sur un symbole
     last=`<div class="mt-4 p-3 rounded-2xl ${r[1]} text-center${pc}"><div class="text-xs opacity-90">Dernier tour révélé</div><div class="text-4xl my-1">${E[h[side]]} <span class="text-xl">vs</span> ${E[h[o]]}</div><div class="font-bold">${r[0]}</div></div>
     <div class="mt-3 flex flex-wrap gap-1 justify-center text-sm">${m.hist.map((x,i)=>`<span class="px-2 py-1 rounded-full bg-white/15">${i+1}. ${E[x[side]]}${E[x[o]]} ${x.w==='='?'=':x.w===side?'✅':'❌'}</span>`).join('')}</div>`;
