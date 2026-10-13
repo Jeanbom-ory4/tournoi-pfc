@@ -11,6 +11,27 @@ body{margin:0;min-height:100vh;color:#fff;background:linear-gradient(160deg,var(
 .shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .pop{animation:pp .5s}@keyframes pp{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 button{touch-action:manipulation}
+.win-ov{position:fixed;inset:0;z-index:60;overflow:hidden;background:#120824;cursor:pointer;opacity:0;animation:wfi .8s forwards}
+.win-ov.out{animation:wfo .65s forwards}
+@keyframes wfi{to{opacity:1}}@keyframes wfo{from{opacity:1}to{opacity:0}}
+.win-ov>svg{position:absolute;inset:0;width:100%;height:100%}
+.wl{animation:wpan 6.2s cubic-bezier(.25,.6,.35,1) forwards}
+@keyframes wpan{from{transform:translateX(0)}to{transform:translateX(var(--dx))}}
+.wsun{animation:wsun 5s ease-out forwards}@keyframes wsun{from{transform:translateY(110px)}to{transform:translateY(0)}}
+.wrip{animation:wrip 2.4s ease-in-out infinite alternate}@keyframes wrip{from{opacity:.25}to{opacity:.7}}
+.win-t{position:absolute;left:0;right:0;top:11%;text-align:center;padding:0 24px;font-family:"Noto Serif","Songti SC",STSong,SimSun,Georgia,serif;color:#fbe7c0;text-shadow:0 2px 18px rgba(0,0,0,.6)}
+.win-k{font-size:clamp(40px,9vw,76px);font-weight:700;letter-spacing:.45em;padding-left:.45em;opacity:0;animation:wk 2.2s .9s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes wk{from{opacity:0;letter-spacing:.7em;filter:blur(8px)}to{opacity:1;letter-spacing:.2em;filter:blur(0)}}
+.win-s{margin-top:14px;font-size:clamp(18px,3.6vw,28px);opacity:0;animation:wfade 1.4s 2.3s forwards}
+.win-seal{margin-top:16px;display:inline-block;opacity:0;transform:scale(1.8) rotate(-8deg);animation:wseal .5s 3.4s cubic-bezier(.2,.9,.3,1.2) forwards;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+@keyframes wseal{to{opacity:.95;transform:scale(1) rotate(-4deg)}}
+.win-p{margin:16px auto 0;max-width:30rem;font-size:clamp(14px,2.6vw,18px);font-style:italic;line-height:1.5;opacity:0;animation:wfade 1.4s 3.9s forwards}
+.win-p span{font-size:.8em;opacity:.7;font-style:normal}
+.win-h{position:absolute;bottom:3%;left:0;right:0;text-align:center;font-size:12px;color:#fbe7c0;opacity:0;animation:wfade 1s 3s forwards;text-shadow:0 1px 6px #000}
+@keyframes wfade{to{opacity:.85}}
+.win-rm .wl,.win-rm .wsun,.win-rm .wrip{animation:none}
+.win-rm .win-k,.win-rm .win-s,.win-rm .win-seal,.win-rm .win-p,.win-rm .win-h{animation-delay:.2s;animation-duration:.6s}
+
 </style></head>
 <body><div id="shell" class="mx-auto p-3" style="max-width:28rem"><h1 id="ttl" class="text-center text-2xl font-black py-2"></h1><div id="app"></div></div>
 <script>
@@ -81,6 +102,7 @@ function render(){
   if(tab==='admin')drawQR();
   notifyCheck();
   champCheck();
+  winCheck();
 }
 function setTab(t){tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render()}
 
@@ -196,6 +218,64 @@ function champCheck(){
   const sig=id+'|'+(fin.hist||[]).map(h=>h.a+h.b).join('');
   if(confSig===sig||ls.get('pfc_conf')===sig)return;
   confSig=sig;ls.set('pfc_conf',sig);confetti();
+}
+
+/* ---------- Transition de victoire (paysage d'encre, esprit dynastie Han) ---------- */
+let winShowing=false;
+function winArt(){
+  const hy=(x,base,amp,seed)=>{const n=Math.sin(x*.011+seed)+.6*Math.sin(x*.027+seed*2.3)+.35*Math.sin(x*.061+seed*4.1);return base-amp*Math.pow((n+1.95)/3.9,1.7)};
+  const ridge=(x1,base,amp,seed,step)=>{
+    const P=[];for(let x=-100;x<=x1;x+=step)P.push([x,hy(x,base,amp,seed)]);
+    let d=`M-100 820 L${P[0][0]} ${P[0][1]}`;
+    for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i];d+=` Q${a[0]} ${a[1]} ${((a[0]+b[0])/2).toFixed(1)} ${((a[1]+b[1])/2).toFixed(1)}`}
+    return d+` L${x1} 820 Z`;
+  };
+  const yun=(x,y,s,o)=>`<use href="#yn" transform="translate(${x} ${y}) scale(${s})" opacity="${o}"/>`;
+  const pine=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})" fill="#0b0511"><path d="M0 0 C-6 -50 10 -90 -4 -150 C-2 -90 -12 -50 10 0Z"/><ellipse cx="-4" cy="-150" rx="46" ry="11"/><ellipse cx="22" cy="-118" rx="36" ry="9"/><ellipse cx="-26" cy="-106" rx="34" ry="8"/><ellipse cx="6" cy="-78" rx="28" ry="7"/></g>`;
+  const que=(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})" fill="#1c0c20"><rect x="-6" y="-14" width="52" height="14"/><rect x="2" y="-58" width="36" height="44"/><path d="M-14 -58 Q20 -70 54 -58 L46 -66 L-6 -66Z"/><rect x="8" y="-92" width="24" height="26"/><path d="M-2 -92 Q20 -104 42 -92 L36 -98 L4 -98Z"/><rect x="18" y="-112" width="4" height="14"/></g>`;
+  const crane=(x,y,s)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 0 q10 -12 22 -2 q12 -10 22 2" fill="none" stroke="#f6e2b8" stroke-width="2.2" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<defs>
+<linearGradient id="wsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#120824"/><stop offset=".38" stop-color="#4a1840"/><stop offset=".6" stop-color="#b53c3a"/><stop offset=".72" stop-color="#f2b46c"/><stop offset="1" stop-color="#f6d9a0"/></linearGradient>
+<linearGradient id="wriv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a2a43"/><stop offset="1" stop-color="#150a1f"/></linearGradient>
+<linearGradient id="wmist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#ffe9c8" stop-opacity=".42"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="wglow"><stop offset="0" stop-color="#ff7a4a" stop-opacity=".75"/><stop offset="1" stop-color="#ff7a4a" stop-opacity="0"/></radialGradient>
+<radialGradient id="wvig" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>
+<g id="yn" fill="none" stroke="#f3d9a0" stroke-width="3" stroke-linecap="round"><path d="M0 40 C20 40 30 18 54 18 C74 18 80 38 66 44 C56 48 46 40 52 32"/><path d="M0 40 C-34 44 -60 54 -110 48"/><path d="M26 40 C36 28 50 28 56 36" opacity=".7"/></g>
+</defs>
+<rect width="1200" height="800" fill="url(#wsky)"/>
+<g class="wsun"><circle cx="600" cy="470" r="230" fill="url(#wglow)"/><circle cx="600" cy="470" r="88" fill="#d8332a"/></g>
+<g class="wl" style="--dx:-110px" opacity=".55">${yun(120,330,1,.8)}${yun(820,365,.9,.7)}${yun(1250,310,1.1,.8)}${yun(1750,350,1,.7)}</g>
+<g class="wl" style="--dx:-70px"><path d="${ridge(2300,545,130,1.2,60)}" fill="#4b2147"/></g>
+<rect class="wl" style="--dx:-120px" x="-100" y="500" width="2600" height="110" fill="url(#wmist)"/>
+<g class="wl" style="--dx:-170px"><path d="${ridge(2300,620,170,4.4,56)}" fill="#2c1232"/>${que(930,hy(930,620,170,4.4)+6,1.1)}${pine(420,hy(420,620,170,4.4)+6,.5)}${pine(1380,hy(1380,620,170,4.4)+6,.55)}</g>
+<g class="wl" style="--dx:-90px"><path d="M-100 650 L2400 650 L2400 820 L-100 820Z" fill="url(#wriv)"/><g stroke="#f7c27a" stroke-width="2.4" stroke-linecap="round" opacity=".55" class="wrip"><path d="M520 668 h160"/><path d="M548 684 h104"/><path d="M572 700 h56"/><path d="M1180 678 h110"/><path d="M200 690 h90"/></g>
+<g transform="translate(760 640)" fill="#0f0614"><path d="M-46 0 Q0 18 46 0 L36 -10 L-36 -10Z"/><rect x="-1" y="-48" width="3" height="40"/><path d="M2 -46 L30 -14 L2 -14Z" opacity=".9"/><circle cx="-26" cy="-14" r="4" fill="#ffb347"/></g></g>
+<g class="wl" style="--dx:-250px"><path d="${ridge(2300,790,190,7.7,70)}" fill="#0e0613"/>${pine(250,hy(250,790,190,7.7)+8,1.15)}${pine(1210,hy(1210,790,190,7.7)+8,1.3)}${pine(1640,hy(1640,790,190,7.7)+8,.95)}</g>
+<g class="wl" style="--dx:200px">${crane(300,395,1)}${crane(352,420,.8)}${crane(250,425,.7)}</g>
+<g class="wl" style="--dx:-330px" opacity=".92">${yun(60,700,1.5,.45)}${yun(930,545,1.5,.5)}${yun(1560,590,1.4,.45)}</g>
+<rect width="1200" height="800" fill="url(#wvig)"/>
+</svg>`;
+}
+function showWin(m){
+  if(winShowing)return;winShowing=true;
+  const R=S.cfg.rounds,nl=rlabel(m.r+1),to=nl==='Finale'?'vers la Finale':/^Tour/.test(nl)?'vers le '+nl:'vers les '+nl;
+  const prov=m.r+2>=R?'Le sommet est en vue.':'Un voyage de mille lieues commence par un pas.',small=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el=document.createElement('div');el.className='win-ov'+(small?' win-rm':'');
+  el.innerHTML=winArt()+`<div class="win-t"><div class="win-k">Victoire</div><div class="win-s">En route ${esc(to)}</div><div class="win-seal"><svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg></div><div class="win-p">« ${prov} »<br><span>Proverbe chinois</span></div></div><div class="win-h">Touche pour continuer</div>`;
+  let done=false;const close=()=>{if(done)return;done=true;el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false},650)};
+  el.onclick=close;document.body.appendChild(el);setTimeout(close,small?3600:6200);
+}
+function winCheck(){
+  const id=me();if(!id||!S.cfg||S.cfg.started===false||winShowing)return;
+  const wins=Object.entries(S.matches).filter(([k,m])=>m.w===id&&m.a&&m.b&&k!=='third'&&m.r<S.cfg.rounds-1).map(([k,m])=>({...m,id:k})).sort((x,y)=>y.r-x.r);
+  const key='pfc_win_'+(S.cfg.tid||'')+'_'+id;let seen=null;
+  try{seen=JSON.parse(ls.get(key)||'null')}catch(e){}
+  const ids=wins.map(m=>m.id);
+  if(!Array.isArray(seen)){ls.set(key,JSON.stringify(ids));if(wins[0])showWin(wins[0]);return}
+  const nw=wins.filter(m=>!seen.includes(m.id));
+  if(!nw.length)return;
+  ls.set(key,JSON.stringify(ids));showWin(nw[0]);
 }
 
 /* ---------- Alertes (page ouverte) ---------- */
