@@ -257,12 +257,24 @@ function winArt(){
 <rect width="1200" height="800" fill="url(#wvig)"/>
 </svg>`;
 }
+// Maximes de plus en plus profondes à mesure que le joueur avance vers la finale (traductions libres de textes classiques chinois)
+const WIN_Q=[
+  ['Un voyage de mille lieues commence par un pas.','Lao-tseu'],
+  ['Qui n’accumule pas les petits pas ne peut atteindre mille lieues.','Xunzi'],
+  ['Qui veut aller trop vite n’atteint pas son but.','Confucius'],
+  ['Si trois personnes marchent ensemble, j’y trouve toujours un maître.','Confucius'],
+  ['Connais l’adversaire, connais-toi toi-même : tu pourras livrer cent batailles sans péril.','Sun Tzu'],
+  ['Qui triomphe des autres est fort ; qui triomphe de lui-même est puissant.','Lao-tseu'],
+  ['Le bien suprême est comme l’eau : elle nourrit tous les êtres sans lutter contre eux.','Lao-tseu'],
+  ['Qui est monté sur le mont Tai trouve l’empire bien petit.','Mencius']
+];
+function winQuote(r,R){const T=R-1,L=WIN_Q.length;return WIN_Q[T<=1?L-1:Math.min(L-1,Math.round(r*(L-1)/(T-1)))]}
 function showWin(m){
   if(winShowing)return;winShowing=true;
   const R=S.cfg.rounds,nl=rlabel(m.r+1),to=nl==='Finale'?'vers la Finale':/^Tour/.test(nl)?'vers le '+nl:'vers les '+nl;
-  const prov=m.r+2>=R?'Le sommet est en vue.':'Un voyage de mille lieues commence par un pas.',small=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const q=winQuote(m.r,R),small=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   const el=document.createElement('div');el.className='win-ov'+(small?' win-rm':'');
-  el.innerHTML=winArt()+`<div class="win-t"><div class="win-k">Victoire</div><div class="win-s">En route ${esc(to)}</div><div class="win-seal"><svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg></div><div class="win-p">« ${prov} »<br><span>Proverbe chinois</span></div></div><div class="win-h">Touche pour continuer</div>`;
+  el.innerHTML=winArt()+`<div class="win-t"><div class="win-k">Victoire</div><div class="win-s">En route ${esc(to)}</div><div class="win-seal"><svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg></div><div class="win-p">« ${esc(q[0])} »<br><span>${esc(q[1])}</span></div></div><div class="win-h">Touche pour continuer</div>`;
   let done=false;const close=()=>{if(done)return;done=true;el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false},650)};
   el.onclick=close;document.body.appendChild(el);setTimeout(close,small?4500:9000);
 }
