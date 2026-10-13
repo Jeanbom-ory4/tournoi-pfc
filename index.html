@@ -15,19 +15,19 @@ button{touch-action:manipulation}
 .win-ov.out{animation:wfo .65s forwards}
 @keyframes wfi{to{opacity:1}}@keyframes wfo{from{opacity:1}to{opacity:0}}
 .win-ov>svg{position:absolute;inset:0;width:100%;height:100%}
-.wl{animation:wpan 6.2s cubic-bezier(.25,.6,.35,1) forwards}
+.wl{animation:wpan 7.2s cubic-bezier(.25,.6,.35,1) forwards}
 @keyframes wpan{from{transform:translateX(0)}to{transform:translateX(var(--dx))}}
-.wsun{animation:wsun 5s ease-out forwards}@keyframes wsun{from{transform:translateY(110px)}to{transform:translateY(0)}}
+.wsun{animation:wsun 5.8s ease-out forwards}@keyframes wsun{from{transform:translateY(110px)}to{transform:translateY(0)}}
 .wrip{animation:wrip 2.4s ease-in-out infinite alternate}@keyframes wrip{from{opacity:.25}to{opacity:.7}}
 .win-t{position:absolute;left:0;right:0;top:11%;text-align:center;padding:0 24px;font-family:"Noto Serif","Songti SC",STSong,SimSun,Georgia,serif;color:#fbe7c0;text-shadow:0 2px 18px rgba(0,0,0,.6)}
-.win-k{font-size:clamp(40px,9vw,76px);font-weight:700;letter-spacing:.45em;padding-left:.45em;opacity:0;animation:wk 2.2s .9s cubic-bezier(.2,.7,.2,1) forwards}
+.win-k{font-size:clamp(40px,9vw,76px);font-weight:700;letter-spacing:.45em;padding-left:.45em;opacity:0;animation:wk 2.4s 1s cubic-bezier(.2,.7,.2,1) forwards}
 @keyframes wk{from{opacity:0;letter-spacing:.7em;filter:blur(8px)}to{opacity:1;letter-spacing:.2em;filter:blur(0)}}
-.win-s{margin-top:14px;font-size:clamp(18px,3.6vw,28px);opacity:0;animation:wfade 1.4s 2.3s forwards}
-.win-seal{margin-top:16px;display:inline-block;opacity:0;transform:scale(1.8) rotate(-8deg);animation:wseal .5s 3.4s cubic-bezier(.2,.9,.3,1.2) forwards;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.win-s{margin-top:14px;font-size:clamp(18px,3.6vw,28px);opacity:0;animation:wfade 1.5s 2.7s forwards}
+.win-seal{margin-top:16px;display:inline-block;opacity:0;transform:scale(1.8) rotate(-8deg);animation:wseal .5s 3.9s cubic-bezier(.2,.9,.3,1.2) forwards;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
 @keyframes wseal{to{opacity:.95;transform:scale(1) rotate(-4deg)}}
-.win-p{margin:16px auto 0;max-width:30rem;font-size:clamp(14px,2.6vw,18px);font-style:italic;line-height:1.5;opacity:0;animation:wfade 1.4s 3.9s forwards}
+.win-p{margin:16px auto 0;max-width:30rem;font-size:clamp(14px,2.6vw,18px);font-style:italic;line-height:1.5;opacity:0;animation:wfade 1.5s 4.5s forwards}
 .win-p span{font-size:.8em;opacity:.7;font-style:normal}
-.win-h{position:absolute;bottom:3%;left:0;right:0;text-align:center;font-size:12px;color:#fbe7c0;opacity:0;animation:wfade 1s 3s forwards;text-shadow:0 1px 6px #000}
+.win-h{position:absolute;bottom:3%;left:0;right:0;text-align:center;font-size:12px;color:#fbe7c0;opacity:0;animation:wfade 1s 3.5s forwards;text-shadow:0 1px 6px #000}
 @keyframes wfade{to{opacity:.85}}
 .win-rm .wl,.win-rm .wsun,.win-rm .wrip{animation:none}
 .win-rm .win-k,.win-rm .win-s,.win-rm .win-seal,.win-rm .win-p,.win-rm .win-h{animation-delay:.2s;animation-duration:.6s}
@@ -264,7 +264,7 @@ function showWin(m){
   const el=document.createElement('div');el.className='win-ov'+(small?' win-rm':'');
   el.innerHTML=winArt()+`<div class="win-t"><div class="win-k">Victoire</div><div class="win-s">En route ${esc(to)}</div><div class="win-seal"><svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg></div><div class="win-p">« ${prov} »<br><span>Proverbe chinois</span></div></div><div class="win-h">Touche pour continuer</div>`;
   let done=false;const close=()=>{if(done)return;done=true;el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false},650)};
-  el.onclick=close;document.body.appendChild(el);setTimeout(close,small?3600:6200);
+  el.onclick=close;document.body.appendChild(el);setTimeout(close,small?3600:7000);
 }
 function winCheck(){
   const id=me();if(!id||!S.cfg||S.cfg.started===false||winShowing)return;
