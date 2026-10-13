@@ -17,6 +17,23 @@ button{touch-action:manipulation}
 .rv-v{font-size:2.5rem;line-height:1.2;margin:.15rem 0 .25rem}
 .rv-v b{font-size:2.5rem;font-weight:800;margin:0 .3rem}
 .rv-t{font-size:1.35rem;font-weight:700}
+/* historique : plaques de bois + symboles dorés */
+.hg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:.9rem}
+.hr{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:14px;border:2px solid #1c0f07;
+background:repeating-linear-gradient(92deg,rgba(0,0,0,.07) 0 2px,transparent 2px 7px),linear-gradient(180deg,#5a3a24,#3a2314 55%,#2c1a0d);
+box-shadow:inset 0 2px 3px rgba(255,210,150,.22),inset 0 -3px 5px rgba(0,0,0,.55),0 3px 6px rgba(0,0,0,.4)}
+.hn{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.35rem;min-width:1.5rem;
+background:linear-gradient(180deg,#f6e7b0,#d9b45f 55%,#a9803a);-webkit-background-clip:text;background-clip:text;color:transparent;
+filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
+.hs{display:flex;gap:2px;flex:1;justify-content:center}
+.hs svg{width:26px;height:26px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.7))}
+.hb{width:36px;height:36px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;border:2px solid #1c0f07;
+background:linear-gradient(180deg,#8a6240,#6b4529);box-shadow:inset 0 1px 2px rgba(255,220,170,.35),inset 0 -2px 4px rgba(0,0,0,.45)}
+.hb svg{width:22px;height:22px;overflow:visible}
+.hb.l svg{color:#ff4b4b;filter:drop-shadow(0 0 4px #ff2020)}
+.hb.t svg{color:#ffc04d;filter:drop-shadow(0 0 4px #ff9f10)}
+.hb.w svg{color:#3dff5a;filter:drop-shadow(0 0 4px #10e030)}
+
 .won-bg{background:linear-gradient(172deg,#f29d84 26%,#b3f3c1 84%)}   /* gagné : saumon vers vert menthe */
 .tie-bg{background:linear-gradient(90deg,#293a4c,#3c6b7d 50%,#4d99a9)}   /* égalité : bleu ardoise vers bleu canard */
 .lost-bg{background:linear-gradient(90deg,#690100,#861821 50%,#a22d40)}   /* perdu : bordeaux vers rouge framboise */
@@ -42,7 +59,12 @@ button{touch-action:manipulation}
 .win-rm .win-k,.win-rm .win-s,.win-rm .win-seal,.win-rm .win-p,.win-rm .win-h{animation-delay:.2s;animation-duration:.6s}
 
 </style></head>
-<body><div id="shell" class="mx-auto p-3" style="max-width:28rem"><h1 id="ttl" class="text-center text-2xl font-black py-2"></h1><div id="app"></div></div>
+<body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="40"><stop offset="0" stop-color="#f6e7b0"/><stop offset=".55" stop-color="#d9b45f"/><stop offset="1" stop-color="#a9803a"/></linearGradient>
+<symbol id="g-r" viewBox="0 0 40 40"><path d="M8 24C5 15 12 7 21 7c9 0 15 7 12 16-2 7-9 11-16 10-5-1-8-4-9-9z" fill="url(#gold)"/><path d="M13 16c2-4 6-6 10-5" stroke="#fff6cf" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/></symbol>
+<symbol id="g-f" viewBox="0 0 40 40"><path d="M9 4h16l8 8v24H9z" fill="url(#gold)"/><path d="M25 4v8h8z" fill="#8a6a2e"/><path d="M14 20h14M14 26h14M14 32h9" stroke="#6b4f1f" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="g-c" viewBox="0 0 40 40"><path d="M16 5L29 31M32 5L19 31" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="37" r="0" /><circle cx="32" cy="33" r="5" fill="none" stroke="url(#gold)" stroke-width="3"/><circle cx="16" cy="33" r="5" fill="none" stroke="url(#gold)" stroke-width="3"/></symbol>
+</defs></svg><div id="shell" class="mx-auto p-3" style="max-width:28rem"><h1 id="ttl" class="text-center text-2xl font-black py-2"></h1><div id="app"></div></div>
 <script>
 const STONE='<svg viewBox="2 7 60 52" width="1.3em" height="1.13em" style="display:inline-block;vertical-align:-.2em" aria-label="Pierre"><path d="M9 45C5 34 11 22 21 18C27 11 40 11 46 18C56 22 61 34 56 45C54 53 44 55 32 55C20 55 11 53 9 45Z" fill="#9ca3af" stroke="#4b5563" stroke-width="3" stroke-linejoin="round"/><path d="M10 45C12 51 20 55 32 55C44 55 54 52 56 45C50 49 40 50 31 49C21 48 14 47 10 45Z" fill="#6b7280"/><path d="M19 27C23 20 31 18 38 19C32 21 27 24 25 31Z" fill="#e5e7eb"/><path d="M40 25L35 34L42 39" fill="none" stroke="#4b5563" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const E={r:STONE,f:'📄',c:'✂️'},N={r:'Pierre',f:'Feuille',c:'Ciseaux'};
@@ -162,7 +184,7 @@ function jeuView(){
     const h=m.hist[m.hist.length-1],r=h.w==='='?['🤝 Égalité, on rejoue','tie-bg']:h.w===side?['🎉 Tour gagné !','won-bg']:['🤦‍♂️ Tour perdu','lost-bg'];
     const pk=m.id+'|'+m.hist.length,pc=popKey===pk?'':' pop';popKey=pk;   // l'animation ne se joue qu'à la révélation, pas à chaque clic sur un symbole
     last=`<div class="mt-4 rounded-2xl rv ${r[1]} text-center${pc}"><div class="rv-l">Dernier tour révélé</div><div class="rv-v">${E[h[side]]} <b>VS</b> ${E[h[o]]}</div><div class="rv-t">${r[0]}</div></div>
-    <div class="mt-3 flex flex-wrap gap-1 justify-center text-sm">${m.hist.map((x,i)=>`<span class="px-2 py-1 rounded-full bg-white/15">${i+1}. ${E[x[side]]}${E[x[o]]} ${x.w==='='?'=':x.w===side?'✅':'❌'}</span>`).join('')}</div>`;
+    <div class="hg">${m.hist.map((x,i)=>{const k=x.w==='='?'t':x.w===side?'w':'l',ic=k==='w'?'<path d="M4 12l6 6L20 6" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>':k==='l'?'<path d="M5 5l14 14M19 5L5 19" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>':'<path d="M5 9h14M5 16h14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>',g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr"><span class="hn">${i+1}.</span><span class="hs">${g(x[side])}${g(x[o])}</span><span class="hb ${k}"><svg viewBox="0 0 24 24">${ic}</svg></span></div>`}).join('')}</div>`;
   }
   return wrap(head+score+status+act+last);
 }
