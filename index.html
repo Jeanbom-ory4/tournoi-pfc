@@ -20,13 +20,18 @@ button{touch-action:manipulation}
 /* historique : plaques de bois + symboles dorés */
 .hg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:.9rem}
 .hr{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:14px;border:2px solid #1c0f07;
-background:repeating-linear-gradient(92deg,rgba(0,0,0,.07) 0 2px,transparent 2px 7px),linear-gradient(180deg,#5a3a24,#3a2314 55%,#2c1a0d);
+background:var(--h1,linear-gradient(transparent,transparent)),var(--h2,linear-gradient(transparent,transparent)),repeating-linear-gradient(92deg,rgba(0,0,0,.07) 0 2px,transparent 2px 7px),linear-gradient(180deg,#5a3a24,#3a2314 55%,#2c1a0d);
 box-shadow:inset 0 2px 3px rgba(255,210,150,.22),inset 0 -3px 5px rgba(0,0,0,.55),0 3px 6px rgba(0,0,0,.4)}
 .hn{font-family:Georgia,'Times New Roman',serif;font-weight:700;font-size:1.35rem;min-width:1.5rem;
 background:linear-gradient(180deg,#f6e7b0,#d9b45f 55%,#a9803a);-webkit-background-clip:text;background-clip:text;color:transparent;
 filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 .hs{display:flex;gap:2px;flex:1;justify-content:center}
 .hs svg{width:26px;height:26px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.7))}
+/* halos spectateur : vert = gagnant, rouge = perdant, gris = égalité (doux) */
+.hr{--gv:radial-gradient(ellipse 60% 120% at 50% 50%,rgba(95,200,125,.30),transparent 75%);--rg:radial-gradient(ellipse 60% 120% at 50% 50%,rgba(225,95,95,.27),transparent 75%)}
+.hr.wa{--h1:radial-gradient(ellipse 48% 130% at 22% 50%,rgba(80,215,125,.40),transparent 80%);--h2:radial-gradient(ellipse 48% 130% at 78% 50%,rgba(235,90,90,.36),transparent 80%)}
+.hr.wb{--h1:radial-gradient(ellipse 48% 130% at 22% 50%,rgba(235,90,90,.36),transparent 80%);--h2:radial-gradient(ellipse 48% 130% at 78% 50%,rgba(80,215,125,.40),transparent 80%)}
+.hr.tt{--h1:radial-gradient(ellipse 85% 140% at 50% 50%,rgba(210,210,220,.24),transparent 85%)}
 .hg.one{grid-template-columns:1fr;gap:8px}
 .hg.one .hr{display:grid;grid-template-columns:1fr 5.5rem 1fr;align-items:center;padding:8px 0;position:relative}
 .hg.one .hn{position:absolute;left:12px;top:50%;transform:translateY(-50%)}
@@ -401,7 +406,7 @@ function matchView(k){
   const st=m.w?`<div class="mt-3 p-3 rounded-2xl won-bg text-center font-bold" style="box-shadow:0 6px 16px rgba(0,0,0,.35);color:#16301f">🏁 Vainqueur : ${pn(m.w)||'—'}${m.ff?`<div class="text-base font-semibold mt-1">${m.ab===m.ff?'🏳️ '+pn(m.ff)+' a abandonné':'⏱ '+pn(m.ff)+' éliminé(e) : délai dépassé'}</div>`:''}</div>`
     :m.pend?`<div class="mt-3 p-3 rounded-2xl bg-yellow-400 text-yellow-950 text-center font-bold">🔒 ${pl} a joué son coup (secret). En attente de ${wt}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`
     :`<div class="mt-3 p-3 rounded-2xl card text-center">${m.a&&m.b?'Prochain tour à jouer…':'Match pas encore défini'}</div>`;
-  const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>{const g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr"><span class="hn">${i+1}.</span><span class="c">${g(x.a)}</span><i>vs</i><span class="c">${g(x.b)}</span></div>`}).join('')}</div>`:'';
+  const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>{const g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr ${x.w==='='?'tt':x.w==='a'?'wa':'wb'}"><span class="hn">${i+1}.</span><span class="c">${g(x.a)}</span><i>vs</i><span class="c">${g(x.b)}</span></div>`}).join('')}</div>`:'';
   return back+wrap(`<div class="text-center text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div>
     <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}</div><div class="text-4xl font-black text-center" style="min-width:5.5rem">${m.sa} - ${m.sb}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}</div></div>${st}
     ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
