@@ -111,6 +111,8 @@ const routeC=(r,i)=>(cntC(r)%2===1&&(r+1)%2===1)?{t:i===0?0:((i-1)>>1)+1}:{t:i>>
 const rlabel=r=>{const k=S.cfg.rounds-r;if(k===1)return 'Finale';if(k===2)return 'Demi-finales';if(k===3&&(cntC(r)===4||cntC(r)===3))return 'Quarts de finale';if(k===4&&cntC(r)>=5&&cntC(r)<=8)return 'Huitièmes de finale';return 'Tour '+(r+1)};
 const Q_LOSE="« Le vrai maître n'est pas celui qui gagne toujours, mais celui qui sait lire le monde avec patience et simplicité. »";
 const Q_THIRD="« La victoire est belle, mais la plus grande richesse reste le chemin parcouru ensemble et le rire partagé. »";
+const Q_FALL="« La plus grande gloire n'est pas de ne jamais tomber, mais de se relever à chaque chute. » (Confucius)";
+const Q_SEED="« Toutes les fleurs de l'avenir sont dans les semences d'aujourd'hui. » (Proverbe chinois)";
 const quoteP=q=>`<p class="text-center italic mt-4 text-lg leading-relaxed">${q}</p>`;
 const CAL=`<svg viewBox="0 0 24 24" width="1.15em" height="1.15em" style="display:inline-block;vertical-align:-.2em" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="#fff"/><path d="M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v3H3z" fill="#ef4444"/><rect x="7" y="2.5" width="2.4" height="5" rx="1.2" fill="#6b7280"/><rect x="14.6" y="2.5" width="2.4" height="5" rx="1.2" fill="#6b7280"/><g fill="#cbd5e1"><rect x="6.5" y="13" width="3" height="2.4" rx=".6"/><rect x="10.5" y="13" width="3" height="2.4" rx=".6"/><rect x="14.5" y="13" width="3" height="2.4" rx=".6"/><rect x="6.5" y="16.7" width="3" height="2.4" rx=".6"/><rect x="10.5" y="16.7" width="3" height="2.4" rx=".6"/></g></svg>`;
 const fmtWhen=ms=>new Date(ms).toLocaleString('fr-FR',{timeZone:'Europe/Paris',weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
@@ -173,14 +175,14 @@ function jeuView(){
     const fin=S.matches[mk(S.cfg.rounds-1,0)];
     if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p><p class="text-center italic mt-4 text-lg leading-relaxed">« La pierre apprend la solidité, la feuille la souplesse, le ciseau la précision. Le sage, lui, sait quand utiliser chacune. »</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>');
     const ffm=Object.values(S.matches).find(x=>x.ff===id);
-    if(ffm&&ffm.ab===id&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">🏳️ Tu as abandonné le tournoi.</p><p class="text-center mt-2 text-sm">Ton adversaire passe au tour suivant. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé ! 😊</p>');
-    if(ffm&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">⏱ Délai dépassé : tu as été éliminé(e).</p><p class="text-center mt-2 text-sm">Tu n\'as pas joué dans les '+S.cfg.hours+' h. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé !</p>');
+    if(ffm&&ffm.ab===id&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">🏳️ Tu as abandonné le tournoi.</p><p class="text-center mt-2 text-sm">Ton adversaire passe au tour suivant. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé ! 😊</p>'+quoteP(Q_SEED));
+    if(ffm&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">⏱ Délai dépassé : tu as été éliminé(e).</p><p class="text-center mt-2 text-sm">Tu n\'as pas joué dans les '+S.cfg.hours+' h. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé !</p>'+quoteP(Q_SEED));
     const th=S.matches.third;
     if(th&&(th.a===id||th.b===id)){
-      if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>'+quoteP(Q_THIRD):'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'+quoteP(Q_LOSE)));
+      if(th.w)return wrap(head+(th.w===id?'<p class="text-center text-3xl font-black">🥉 Troisième place !</p><p class="text-center mt-2">Bravo, tu montes sur le podium !</p>'+quoteP(Q_THIRD):'<p class="text-center font-bold">Tu termines 4e de ce tournoi.</p><p class="text-center mt-2 text-sm">Merci d\'avoir joué !</p>'+quoteP(Q_FALL)));
       return wrap(head+'<p class="text-center font-bold">⏳ En attente de l\'adversaire de la petite finale…</p><p class="text-center mt-2 text-sm">Reviens un peu plus tard.</p>');
     }
-    if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>'+quoteP(Q_LOSE));
+    if(fin&&fin.w&&(fin.a===id||fin.b===id))return wrap(head+'<p class="text-center text-3xl font-black">🥈 Deuxième place !</p><p class="text-center mt-2">Bravo pour cette finale !</p>'+quoteP(Q_FALL));
     if(fin&&fin.w)return wrap(head+`<p class="text-center font-bold">Le tournoi est terminé.</p><p class="text-center mt-2">🏆 Vainqueur : ${pn(fin.w)}</p>`);
     const last=Object.values(S.matches).filter(x=>x.w===id).sort((x,y)=>y.r-x.r)[0],exempt=!!last&&isBye(last);
     const lostM=Object.values(S.matches).find(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id),lost=!!lostM,early=!!lostM&&lostM.id!=='third'&&lostM.r<S.cfg.rounds-2;
@@ -311,13 +313,10 @@ function winArt(){
 // Maximes de plus en plus profondes à mesure que le joueur avance vers la finale (traductions libres de textes classiques chinois)
 const WIN_Q=[
   ['Un voyage de mille lieues commence par un pas.','Lao-tseu'],
-  ['Qui n’accumule pas les petits pas ne peut atteindre mille lieues.','Xunzi'],
-  ['Qui veut aller trop vite n’atteint pas son but.','Confucius'],
-  ['Si trois personnes marchent ensemble, j’y trouve toujours un maître.','Confucius'],
-  ['Connais l’adversaire, connais-toi toi-même : tu pourras livrer cent batailles sans péril.','Sun Tzu'],
-  ['Qui triomphe des autres est fort ; qui triomphe de lui-même est puissant.','Lao-tseu'],
+  ['Il n’y a pas de meilleur miroir qu’un véritable ami.','Proverbe japonais'],
+  ['Si trois personnes marchent ensemble, je trouve forcément parmi elles un maître.','Confucius'],
   ['Le bien suprême est comme l’eau : elle nourrit tous les êtres sans lutter contre eux.','Lao-tseu'],
-  ['Qui est monté sur le mont Tai trouve l’empire bien petit.','Mencius']
+  ['Les moments passés ne reviennent pas. Chaque seconde est précieuse. Il est donc capital de prendre soin de chaque rencontre, même insignifiante.','Proverbe japonais']
 ];
 function winQuote(r,R){const T=R-1,L=WIN_Q.length;return WIN_Q[T<=1?L-1:Math.min(L-1,Math.round(r*(L-1)/(T-1)))]}
 
