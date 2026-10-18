@@ -81,6 +81,14 @@ background:linear-gradient(180deg,#8a6240,#6b4529);box-shadow:inset 0 1px 2px rg
 .ptl{transform-box:fill-box;transform-origin:center;opacity:0;animation:ptl var(--t) linear var(--dl) infinite}
 @keyframes ptl{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.95}50%{transform:translate(calc(var(--sx)*.45 + 22px),230px) rotate(200deg)}100%{opacity:0;transform:translate(var(--sx),520px) rotate(430deg)}}
 .wmoon{animation:wmoon 9.4s ease-in-out forwards}@keyframes wmoon{from{transform:translateY(-20px)}to{transform:translateY(55px)}}
+.win-k.s{font-size:clamp(24px,7.2vw,60px);letter-spacing:.3em;padding-left:.3em}
+.stm{transform-box:fill-box;transform-origin:center;opacity:0;animation:stm 4s ease-out var(--dl) infinite}
+@keyframes stm{0%{opacity:0;transform:translateY(0) scaleX(.9)}25%{opacity:.7}100%{opacity:0;transform:translateY(-46px) scaleX(1.3)}}
+.lg{animation:lgo 9s ease-in forwards}
+@keyframes lgo{0%{opacity:1}25%{opacity:.92}40%{opacity:.7}52%{opacity:.8}70%{opacity:.35}85%{opacity:.16}100%{opacity:.03}}
+.lbob{animation:lbob 3s ease-in-out infinite alternate}@keyframes lbob{from{transform:translateY(-3px)}to{transform:translateY(3px)}}
+.stars{animation:stup 9s ease-in forwards}@keyframes stup{from{opacity:.35}to{opacity:1}}
+.win-rm .stm,.win-rm .lbob,.win-rm .stars{animation:none}.win-rm .stm{opacity:.5}.win-rm .lg{animation:none;opacity:.4}
 .win-rm .ptl,.win-rm .wmoon{animation:none}.win-rm .ptl{opacity:.8}
 .win-rm .wl,.win-rm .wsun,.win-rm .wrip{animation:none}
 .win-rm .win-k,.win-rm .win-s,.win-rm .win-seal,.win-rm .win-p,.win-rm .win-h{animation-delay:.2s;animation-duration:.6s}
@@ -357,6 +365,78 @@ ${petals}
 <rect width="1200" height="800" fill="url(#lvig)"/>
 </svg>`;
 }
+
+function pathArt(){
+  const hy=(x,base,amp,seed)=>{const n=Math.sin(x*.011+seed)+.6*Math.sin(x*.027+seed*2.3)+.35*Math.sin(x*.061+seed*4.1);return base-amp*Math.pow((n+1.95)/3.9,1.7)};
+  const ridge=(x1,base,amp,seed,step)=>{
+    const P=[];for(let x=-100;x<=x1;x+=step)P.push([x,hy(x,base,amp,seed)]);
+    let d=`M-100 820 L${P[0][0]} ${P[0][1]}`;
+    for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i];d+=` Q${a[0]} ${a[1]} ${((a[0]+b[0])/2).toFixed(1)} ${((a[1]+b[1])/2).toFixed(1)}`}
+    return d+` L${x1} 820 Z`;
+  };
+  return {hy,ridge};
+}
+function quitArt(small){
+  const {hy,ridge}=pathArt();
+  const B=[[430,800,520,740,640,735,660,690],[660,690,685,640,600,620,640,585],[640,585,675,555,735,560,760,525]],pts=[];
+  B.forEach((b,si)=>{for(let i=si?1:0;i<=24;i++){const t=i/24,u=1-t;pts.push([u*u*u*b[0]+3*u*u*t*b[2]+3*u*t*t*b[4]+t*t*t*b[6],u*u*u*b[1]+3*u*u*t*b[3]+3*u*t*t*b[5]+t*t*t*b[7]])}});
+  const Lf=[],Rt=[],n=pts.length-1;
+  pts.forEach((q,i)=>{const a=pts[Math.max(0,i-1)],c=pts[Math.min(n,i+1)];const dx=c[0]-a[0],dy=c[1]-a[1],m=Math.hypot(dx,dy)||1,nx=-dy/m,ny=dx/m,w=(54*(1-i/n)+3)/2;Lf.push([q[0]+nx*w,q[1]+ny*w]);Rt.push([q[0]-nx*w,q[1]-ny*w])});
+  const f=a=>a.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L');
+  const road='M'+f(Lf)+' L'+f(Rt.reverse())+'Z';
+  const mp='M430 800 C520 740 640 735 660 690 C685 640 600 620 640 585 C675 555 735 560 760 525';
+  const trav=`<g fill="#0c0a1a"><path d="M-9 0L-7 -34Q0 -40 7 -34L9 0Z"/><circle cx="0" cy="-42" r="5"/><path d="M-18 -43Q0 -68 18 -43Q0 -48 -18 -43Z"/><rect x="12" y="-60" width="2.4" height="60" rx="1"/><ellipse cx="-9" cy="-30" rx="5" ry="8"/></g>`;
+  const walker=small?`<g transform="translate(660 690) scale(.7)">${trav}</g>`:`<g><animateMotion dur="9s" fill="freeze" rotate="0" calcMode="linear" keyPoints="0.1;0.84" keyTimes="0;1" path="${mp}"/><g><animateTransform attributeName="transform" type="scale" from="1.15" to=".3" dur="9s" fill="freeze"/><animate attributeName="opacity" values="1;1;.15" keyTimes="0;.62;1" dur="9s" fill="freeze"/>${trav}</g></g>`;
+  const pine=(x,y,sc)=>`<g transform="translate(${x} ${y}) scale(${sc})" fill="#0b0919"><path d="M0 0C-6 -50 10 -90 -4 -150C-2 -90 -12 -50 10 0Z"/><ellipse cx="-4" cy="-150" rx="46" ry="11"/><ellipse cx="22" cy="-118" rx="36" ry="9"/><ellipse cx="-26" cy="-106" rx="34" ry="8"/><ellipse cx="6" cy="-78" rx="28" ry="7"/></g>`;
+  return `<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<defs>
+<linearGradient id="qsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#171d44"/><stop offset=".4" stop-color="#3f4777"/><stop offset=".62" stop-color="#8d86ad"/><stop offset=".8" stop-color="#e3bfa6"/><stop offset="1" stop-color="#f1d3a6"/></linearGradient>
+<linearGradient id="qmist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#f4e6dc" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="qglow"><stop offset="0" stop-color="#ffb46a" stop-opacity=".8"/><stop offset="1" stop-color="#ffb46a" stop-opacity="0"/></radialGradient>
+<radialGradient id="qvig" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+</defs>
+<rect width="1200" height="800" fill="url(#qsky)"/>
+<circle cx="640" cy="500" r="260" fill="url(#qglow)"/>
+<g class="wl" style="--dx:-60px"><path d="${ridge(2300,520,120,2.6,60)}" fill="#7b7499" opacity=".9"/></g>
+<rect class="wl" style="--dx:-110px" x="-100" y="470" width="2600" height="120" fill="url(#qmist)"/>
+<g class="wl" style="--dx:-140px"><path d="${ridge(2300,585,150,5.4,56)}" fill="#4d4977"/></g>
+<rect class="wl" style="--dx:-90px" x="-100" y="540" width="2600" height="110" fill="url(#qmist)" opacity=".8"/>
+<g class="wl" style="--dx:-190px"><path d="${ridge(2300,660,130,8.1,64)}" fill="#2f2b55"/><path d="${road}" fill="#a398b8" opacity=".85"/><path d="${road}" fill="none" stroke="#d8cde0" stroke-width="1.6" opacity=".5"/>${walker}</g>
+<g class="wl" style="--dx:-250px"><path d="${ridge(2300,790,150,3.3,70)}" fill="#0f0d24"/>${pine(330,hy(330,790,150,3.3)+8,1.1)}${pine(980,hy(980,790,150,3.3)+8,1.25)}
+<g transform="translate(700 772)"><path d="M-48 8Q-40 -16 -8 -20Q34 -24 54 6Z" fill="#0a0818"/><path d="M-20 -20h46Q24 -6 3 -5Q-16 -6 -20 -20Z" fill="#2a1a22"/><ellipse cx="3" cy="-20" rx="23" ry="4.5" fill="#ffb347" opacity=".85"/></g><g transform="translate(703 737)" fill="none" stroke="#f6e8dc" stroke-width="2.4" stroke-linecap="round"><path class="stm" style="--dl:0s" d="M-6 0Q-12 -12 -4 -22Q4 -32 -4 -42"/><path class="stm" style="--dl:1.3s" d="M4 0Q10 -12 2 -22Q-6 -32 2 -42"/><path class="stm" style="--dl:2.6s" d="M-1 0Q-6 -12 1 -22Q8 -32 1 -42"/></g></g>
+
+<rect width="1200" height="800" fill="url(#qvig)"/>
+</svg>`;
+}
+function timeArt(small){
+  const {hy,ridge}=pathArt();
+  const st=[];for(let i=0;i<46;i++){const x=300+((i*137.5)%620),y=20+((i*83.3)%330),r=.9+((i*7)%5)*.28;st.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="#e9e3ff" opacity="${(.4+((i*13)%6)*.1).toFixed(2)}"/>`)}
+  return `<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<defs>
+<linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04040f"/><stop offset=".5" stop-color="#0d1033"/><stop offset=".75" stop-color="#1a1c4d"/><stop offset="1" stop-color="#2b2a63"/></linearGradient>
+<linearGradient id="triv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1f55"/><stop offset="1" stop-color="#05060f"/></linearGradient>
+<radialGradient id="tglow"><stop offset="0" stop-color="#ffb35c" stop-opacity=".85"/><stop offset=".45" stop-color="#ff8a3a" stop-opacity=".28"/><stop offset="1" stop-color="#ff8a3a" stop-opacity="0"/></radialGradient>
+<linearGradient id="tlamp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a0"/><stop offset=".5" stop-color="#ffab4a"/><stop offset="1" stop-color="#e2692a"/></linearGradient>
+<radialGradient id="tvig" cx=".5" cy=".5" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".62"/></radialGradient>
+</defs>
+<rect width="1200" height="800" fill="url(#tsky)"/>
+<g class="stars">${st.join('')}</g>
+<g class="wl" style="--dx:-60px"><path d="${ridge(2300,575,120,2.2,60)}" fill="#161947"/></g>
+<g class="wl" style="--dx:-120px"><path d="${ridge(2300,625,140,5.1,56)}" fill="#0d1031"/></g>
+<g class="wl" style="--dx:-80px"><rect x="-100" y="625" width="2600" height="200" fill="url(#triv)"/>
+<path d="M650 628L650 608Q705 574 760 570Q815 574 870 608L870 628L842 628A54 48 0 0 0 678 628Z" fill="#06071a"/><rect x="646" y="604" width="228" height="5" fill="#06071a"/>
+<g stroke="#9aa0ff" stroke-width="2.2" stroke-linecap="round" opacity=".35"><path d="M300 690h120"/><path d="M360 710h70"/><path d="M820 700h130"/><path d="M860 724h80"/></g></g>
+<g class="wl" style="--dx:-40px">
+<g class="lg"><circle cx="590" cy="665" r="250" fill="url(#tglow)"/><ellipse cx="590" cy="760" rx="22" ry="62" fill="#ffb35c" opacity=".33"/><ellipse cx="590" cy="775" rx="40" ry="14" fill="#ffb35c" opacity=".22"/></g>
+<g class="lbob"><g transform="translate(590 690)">
+<rect x="-14" y="-82" width="28" height="6" rx="2" fill="#2a1410"/><ellipse cx="0" cy="-40" rx="28" ry="38" fill="#3a1b12"/>
+<g class="lg"><ellipse cx="0" cy="-40" rx="24" ry="34" fill="url(#tlamp)"/><ellipse cx="0" cy="-34" rx="9" ry="13" fill="#fff3c8" opacity=".85"/></g>
+<g stroke="#4a2316" stroke-width="2" fill="none" opacity=".75"><path d="M0 -76V-2"/><path d="M-14 -74Q-26 -40 -14 -6"/><path d="M14 -74Q26 -40 14 -6"/></g>
+<rect x="-12" y="-4" width="24" height="6" rx="2" fill="#2a1410"/><path d="M0 2V16" stroke="#7a2a18" stroke-width="2"/><path d="M-4 16h8l-2 10h-4z" fill="#a8341f"/></g></g>
+</g>
+<rect width="1200" height="800" fill="url(#tvig)"/>
+</svg>`;
+}
 // Maximes de plus en plus profondes à mesure que le joueur avance vers la finale (traductions libres de textes classiques chinois)
 const WIN_Q=[
   ['Un voyage de mille lieues commence par un pas.','Lao-tseu'],
@@ -383,7 +463,13 @@ function winMusic(lose){
   const gong=(f,t,v,d)=>{[1,1.51,2.07,2.96].forEach((m,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f*m;g.gain.setValueAtTime(0,t0+t);g.gain.linearRampToValueAtTime(v/(i+1.4),t0+t+.04);g.gain.exponentialRampToValueAtTime(.0005,t0+t+d/(1+i*.35));o.connect(g);g.connect(lp);o.start(t0+t);o.stop(t0+t+d+.1)})};
   const drone=(f,v)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+2.5);g.gain.linearRampToValueAtTime(0,t0+9.2);o.connect(g);g.connect(out);o.start(t0);o.stop(t0+9.4)};
   const C4=261.63,D4=293.66,E4=329.63,G4=392,A4=440,C5=523.25,D5=587.33,E5=659.25,G5=783.99;
-  if(lose){
+  if(lose==='quit'){
+    gong(110,0,.3,5);drone(55,.07);drone(82.41,.04);
+    [[1.2,D5],[3.0,A4],[4.9,G4],[6.7,E4]].forEach(([t,f])=>pluck(f,t,.13,2.8));
+  }else if(lose==='time'){
+    gong(82.41,0,.38,7);drone(55,.08);
+    [[1.4,A4],[3.6,E4],[5.6,A4/2]].forEach(([t,f])=>pluck(f,t,.12,3.2));
+  }else if(lose){
     gong(98,0,.42,6);drone(55,.09);drone(82.41,.05);
     [[1.1,E5],[2.5,D5],[3.9,C5],[5.3,A4],[6.8,G4]].forEach(([t,f])=>pluck(f,t,.16,2.6));
     [[2.0,A4/2],[4.6,E4],[6.2,C4]].forEach(([t,f])=>pluck(f,t,.1,2.4));
@@ -400,11 +486,14 @@ const LOSE_Q=['Tomber sept fois, se relever huit.','Proverbe japonais'];
 function showWin(m,lose){
   if(winShowing)return;winShowing=true;
   const R=S.cfg.rounds,small=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let art,k,sub,q,seal;
+  let art,k,sub,q,seal,ks='';
   if(lose){
-    art=loseArt();k='Défaite';q=LOSE_Q;
-    sub=m.id==='third'?'Tu termines quatrième':m.r>=R-1?'Tu termines deuxième':m.r===R-2?'Cap sur la petite finale':'Fin de ton parcours';
-    seal='<svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#8e3a4f"/><g fill="#fbe7ee"><circle cx="30" cy="19" r="7"/><circle cx="41" cy="27" r="7"/><circle cx="37" cy="40" r="7"/><circle cx="23" cy="40" r="7"/><circle cx="19" cy="27" r="7"/></g><circle cx="30" cy="30" r="5" fill="#8e3a4f"/></svg>';
+    const plum='<svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#8e3a4f"/><g fill="#fbe7ee"><circle cx="30" cy="19" r="7"/><circle cx="41" cy="27" r="7"/><circle cx="37" cy="40" r="7"/><circle cx="23" cy="40" r="7"/><circle cx="19" cy="27" r="7"/></g><circle cx="30" cy="30" r="5" fill="#8e3a4f"/></svg>';
+    seal=plum;
+    if(lose==='quit'){art=quitArt(small);k='Un autre chemin';ks=' s';sub='Merci d’avoir marché avec nous';q=['Celui qui sait se contenter est riche.','Lao-tseu']}
+    else if(lose==='time'){art=timeArt(small);k='Temps écoulé';ks=' s';sub='Le délai de '+((S.cfg&&S.cfg.hours)||48)+' h est dépassé';q=['Un pouce de temps vaut un pouce d’or, mais un pouce d’or n’achète pas un pouce de temps.','Proverbe chinois']}
+    else{art=loseArt();k='Défaite';q=LOSE_Q;
+      sub=m.id==='third'?'Tu termines quatrième':m.r>=R-1?'Tu termines deuxième':m.r===R-2?'Cap sur la petite finale':'Fin de ton parcours'}
   }else{
     const isThird=m.id==='third',isFinal=!isThird&&m.r>=R-1;art=winArt();k='Victoire';q=winQuote(m.r,R,isThird||isFinal);
     if(isThird)sub='Une belle fin de parcours';else if(isFinal)sub='Au sommet du tournoi';
@@ -412,28 +501,39 @@ function showWin(m,lose){
     seal='<svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg>';
   }
   const el=document.createElement('div');el.className='win-ov'+(small?' win-rm':'')+(lose?' win-lose':'');
-  el.innerHTML=art+`<div class="win-t"><div class="win-k">${k}</div><div class="win-s">${esc(sub)}</div><div class="win-seal">${seal}</div><div class="win-p">« ${esc(q[0])} »<br><span>${esc(q[1])}</span></div></div><div class="win-h">Touche pour continuer</div>`;
+  el.innerHTML=art+`<div class="win-t"><div class="win-k${ks}">${k}</div><div class="win-s">${esc(sub)}</div><div class="win-seal">${seal}</div><div class="win-p">« ${esc(q[0])} »<br><span>${esc(q[1])}</span></div></div><div class="win-h">Touche pour continuer</div>`;
   const stopM=winMusic(lose);let done=false;const close=()=>{if(done)return;done=true;if(stopM)stopM();el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false;try{champCheck()}catch(e){}},650)};
   el.onclick=close;document.body.appendChild(el);
   const sb=document.createElement('button');sb.className='win-snd';sb.textContent=sndOn?'🔊':'🔇';sb.setAttribute('aria-label','Son');sb.onclick=ev=>{ev.stopPropagation();sndOn=!sndOn;try{ls.set('pfc_snd',sndOn?'1':'0')}catch(e){}sb.textContent=sndOn?'🔊':'🔇';if(!sndOn){if(stopM)stopM()}};el.appendChild(sb);setTimeout(close,small?4500:9000);
 }
+function pendingOf(key,list){
+  let seen=null;try{seen=JSON.parse(ls.get(key)||'null')}catch(e){}
+  const ids=list.map(m=>m.id);
+  if(!Array.isArray(seen)){ls.set(key,JSON.stringify(ids));return list[0]||null}
+  const nw=list.filter(m=>!seen.includes(m.id));
+  if(nw.length){ls.set(key,JSON.stringify(ids));return nw[0]}
+  return null;
+}
 function winCheck(){
   const id=me();if(!id||!S.cfg||S.cfg.started===false||winShowing)return;
-  const wins=Object.entries(S.matches).filter(([k,m])=>m.w===id&&m.a&&m.b).map(([k,m])=>({...m,id:k})).sort((x,y)=>y.r-x.r);
-  const key='pfc_win_'+(S.cfg.tid||'')+'_'+id;let seen=null;
-  try{seen=JSON.parse(ls.get(key)||'null')}catch(e){}
-  const ids=wins.map(m=>m.id);
-  if(!Array.isArray(seen)){ls.set(key,JSON.stringify(ids));if(wins[0]){showWin(wins[0]);return}}
-  else{const nw=wins.filter(m=>!seen.includes(m.id));if(nw.length){ls.set(key,JSON.stringify(ids));showWin(nw[0]);return}}
-  /* défaites jouées (hors abandon / délai dépassé) */
-  const loses=Object.entries(S.matches).filter(([k,m])=>m.w&&m.w!==id&&m.a&&m.b&&(m.a===id||m.b===id)&&m.ff!==id).map(([k,m])=>({...m,id:k})).sort((x,y)=>y.r-x.r);
-  const lkey='pfc_lose_'+(S.cfg.tid||'')+'_'+id;let ls0=null;
-  try{ls0=JSON.parse(ls.get(lkey)||'null')}catch(e){}
-  const lids=loses.map(m=>m.id);
-  if(!Array.isArray(ls0)){ls.set(lkey,JSON.stringify(lids));if(loses[0])showWin(loses[0],true);return}
-  const nl=loses.filter(m=>!ls0.includes(m.id));
-  if(!nl.length)return;
-  ls.set(lkey,JSON.stringify(lids));showWin(nl[0],true);
+  const tid=S.cfg.tid||'',all=Object.entries(S.matches).map(([k,m])=>({...m,id:k}));
+  const wins=all.filter(m=>m.w===id&&m.a&&m.b).sort((x,y)=>y.r-x.r);
+  const loses=all.filter(m=>m.w&&m.w!==id&&m.a&&m.b&&(m.a===id||m.b===id)&&m.ff!==id).sort((x,y)=>y.r-x.r);
+  const ffs=all.filter(m=>m.ff===id&&m.w&&m.w!==id).sort((x,y)=>y.r-x.r);
+  const kw='pfc_win_'+tid+'_'+id,kl='pfc_lose_'+tid+'_'+id,kf='pfc_ff_'+tid+'_'+id;
+  const first=ls.get(kw)===null&&ls.get(kl)===null&&ls.get(kf)===null;
+  if(first){
+    /* première ouverture sur cet appareil : on ne montre que l'événement le plus récent */
+    ls.set(kw,JSON.stringify(wins.map(m=>m.id)));ls.set(kl,JSON.stringify(loses.map(m=>m.id)));ls.set(kf,JSON.stringify(ffs.map(m=>m.id)));
+    if(ffs[0]){showWin(ffs[0],ffs[0].ab===id?'quit':'time');return}
+    const a=wins[0],b=loses[0];
+    if(a&&(!b||a.r>=b.r)){showWin(a);return}
+    if(b){showWin(b,true)}
+    return;
+  }
+  const w=pendingOf(kw,wins);if(w){showWin(w);return}
+  const l=pendingOf(kl,loses);if(l){showWin(l,true);return}
+  const f=pendingOf(kf,ffs);if(f)showWin(f,f.ab===id?'quit':'time');
 }
 
 /* ---------- Alertes (page ouverte) ---------- */
