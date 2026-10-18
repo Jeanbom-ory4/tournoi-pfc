@@ -61,9 +61,9 @@ background:linear-gradient(180deg,#8a6240,#6b4529);box-shadow:inset 0 1px 2px rg
 .win-ov.out{animation:wfo .65s forwards}
 @keyframes wfi{to{opacity:1}}@keyframes wfo{from{opacity:1}to{opacity:0}}
 .win-ov>svg{position:absolute;inset:0;width:100%;height:100%}
-.wl{animation:wpan 9.4s cubic-bezier(.25,.6,.35,1) forwards}
+.wl{animation:wpan 12.4s cubic-bezier(.25,.6,.35,1) forwards}
 @keyframes wpan{from{transform:translateX(0)}to{transform:translateX(var(--dx))}}
-.wsun{animation:wsun 6s ease-out forwards}@keyframes wsun{from{transform:translateY(110px)}to{transform:translateY(0)}}
+.wsun{animation:wsun 8s ease-out forwards}@keyframes wsun{from{transform:translateY(110px)}to{transform:translateY(0)}}
 .wrip{animation:wrip 2.4s ease-in-out infinite alternate}@keyframes wrip{from{opacity:.25}to{opacity:.7}}
 .win-t{position:absolute;left:0;right:0;top:11%;text-align:center;padding:0 24px;font-family:"Noto Serif","Songti SC",STSong,SimSun,Georgia,serif;color:#fbe7c0;text-shadow:0 2px 18px rgba(0,0,0,.6)}
 .win-k{font-size:clamp(40px,9vw,76px);font-weight:700;letter-spacing:.45em;padding-left:.45em;opacity:0;animation:wk 2.2s .9s cubic-bezier(.2,.7,.2,1) forwards}
@@ -80,14 +80,14 @@ background:linear-gradient(180deg,#8a6240,#6b4529);box-shadow:inset 0 1px 2px rg
 .win-lose .win-k{letter-spacing:.35em}
 .ptl{transform-box:fill-box;transform-origin:center;opacity:0;animation:ptl var(--t) linear var(--dl) infinite}
 @keyframes ptl{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.95}50%{transform:translate(calc(var(--sx)*.45 + 22px),230px) rotate(200deg)}100%{opacity:0;transform:translate(var(--sx),520px) rotate(430deg)}}
-.wmoon{animation:wmoon 9.4s ease-in-out forwards}@keyframes wmoon{from{transform:translateY(-20px)}to{transform:translateY(55px)}}
+.wmoon{animation:wmoon 12.4s ease-in-out forwards}@keyframes wmoon{from{transform:translateY(-20px)}to{transform:translateY(55px)}}
 .win-k.s{font-size:clamp(24px,7.2vw,60px);letter-spacing:.3em;padding-left:.3em}
 .stm{transform-box:fill-box;transform-origin:center;opacity:0;animation:stm 4s ease-out var(--dl) infinite}
 @keyframes stm{0%{opacity:0;transform:translateY(0) scaleX(.9)}25%{opacity:.7}100%{opacity:0;transform:translateY(-46px) scaleX(1.3)}}
-.lg{animation:lgo 9s ease-in forwards}
+.lg{animation:lgo 12s ease-in forwards}
 @keyframes lgo{0%{opacity:1}25%{opacity:.92}40%{opacity:.7}52%{opacity:.8}70%{opacity:.35}85%{opacity:.16}100%{opacity:.03}}
 .lbob{animation:lbob 3s ease-in-out infinite alternate}@keyframes lbob{from{transform:translateY(-3px)}to{transform:translateY(3px)}}
-.stars{animation:stup 9s ease-in forwards}@keyframes stup{from{opacity:.35}to{opacity:1}}
+.stars{animation:stup 12s ease-in forwards}@keyframes stup{from{opacity:.35}to{opacity:1}}
 .win-rm .stm,.win-rm .lbob,.win-rm .stars{animation:none}.win-rm .stm{opacity:.5}.win-rm .lg{animation:none;opacity:.4}
 .win-rm .ptl,.win-rm .wmoon{animation:none}.win-rm .ptl{opacity:.8}
 .win-rm .wl,.win-rm .wsun,.win-rm .wrip{animation:none}
@@ -386,7 +386,7 @@ function quitArt(small){
   const road='M'+f(Lf)+' L'+f(Rt.reverse())+'Z';
   const mp='M430 800 C520 740 640 735 660 690 C685 640 600 620 640 585 C675 555 735 560 760 525';
   const trav=`<g fill="#0c0a1a"><path d="M-9 0L-7 -34Q0 -40 7 -34L9 0Z"/><circle cx="0" cy="-42" r="5"/><path d="M-18 -43Q0 -68 18 -43Q0 -48 -18 -43Z"/><rect x="12" y="-60" width="2.4" height="60" rx="1"/><ellipse cx="-9" cy="-30" rx="5" ry="8"/></g>`;
-  const walker=small?`<g transform="translate(660 690) scale(.7)">${trav}</g>`:`<g><animateMotion dur="9s" fill="freeze" rotate="0" calcMode="linear" keyPoints="0.1;0.84" keyTimes="0;1" path="${mp}"/><g><animateTransform attributeName="transform" type="scale" from="1.15" to=".3" dur="9s" fill="freeze"/><animate attributeName="opacity" values="1;1;.15" keyTimes="0;.62;1" dur="9s" fill="freeze"/>${trav}</g></g>`;
+  const walker=small?`<g transform="translate(660 690) scale(.7)">${trav}</g>`:`<g><animateMotion dur="12s" fill="freeze" rotate="0" calcMode="linear" keyPoints="0.1;0.84" keyTimes="0;1" path="${mp}"/><g><animateTransform attributeName="transform" type="scale" from="1.15" to=".3" dur="12s" fill="freeze"/><animate attributeName="opacity" values="1;1;.15" keyTimes="0;.62;1" dur="12s" fill="freeze"/>${trav}</g></g>`;
   const pine=(x,y,sc)=>`<g transform="translate(${x} ${y}) scale(${sc})" fill="#0b0919"><path d="M0 0C-6 -50 10 -90 -4 -150C-2 -90 -12 -50 10 0Z"/><ellipse cx="-4" cy="-150" rx="46" ry="11"/><ellipse cx="22" cy="-118" rx="36" ry="9"/><ellipse cx="-26" cy="-106" rx="34" ry="8"/><ellipse cx="6" cy="-78" rx="28" ry="7"/></g>`;
   return `<svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
 <defs>
@@ -454,14 +454,14 @@ function audioCtx(){try{if(!actx){const C=window.AudioContext||window.webkitAudi
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(sndOn)audioCtx()},{passive:true}));
 function winMusic(lose){
   const c=audioCtx();if(!c||!sndOn)return null;
-  const t0=c.currentTime+.15,out=c.createGain();out.gain.setValueAtTime(0,t0);out.gain.linearRampToValueAtTime(.55,t0+.6);out.connect(c.destination);
+  const K=1.33,t0=c.currentTime+.15,out=c.createGain();out.gain.setValueAtTime(0,t0);out.gain.linearRampToValueAtTime(.55,t0+.6);out.connect(c.destination);
   const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;lp.connect(out);
   const dl=c.createDelay(1);dl.delayTime.value=.38;const fb=c.createGain();fb.gain.value=.32;const wet=c.createGain();wet.gain.value=.35;
   lp.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(out);
-  const pluck=(f,t,v,d)=>{const g=c.createGain();g.gain.setValueAtTime(0,t0+t);g.gain.linearRampToValueAtTime(v,t0+t+.012);g.gain.exponentialRampToValueAtTime(.0008,t0+t+d);g.connect(lp);
+  const pluck=(f,t,v,d)=>{const g=c.createGain();t*=K;g.gain.setValueAtTime(0,t0+t);g.gain.linearRampToValueAtTime(v,t0+t+.012);g.gain.exponentialRampToValueAtTime(.0008,t0+t+d);g.connect(lp);
     [['triangle',1,1],['sine',2,.35],['sine',3.01,.12]].forEach(([w,m,a])=>{const o=c.createOscillator(),og=c.createGain();o.type=w;o.frequency.value=f*m;og.gain.value=a;o.connect(og);og.connect(g);o.start(t0+t);o.stop(t0+t+d+.1)})};
-  const gong=(f,t,v,d)=>{[1,1.51,2.07,2.96].forEach((m,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f*m;g.gain.setValueAtTime(0,t0+t);g.gain.linearRampToValueAtTime(v/(i+1.4),t0+t+.04);g.gain.exponentialRampToValueAtTime(.0005,t0+t+d/(1+i*.35));o.connect(g);g.connect(lp);o.start(t0+t);o.stop(t0+t+d+.1)})};
-  const drone=(f,v)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+2.5);g.gain.linearRampToValueAtTime(0,t0+9.2);o.connect(g);g.connect(out);o.start(t0);o.stop(t0+9.4)};
+  const gong=(f,t,v,d)=>{t*=K;[1,1.51,2.07,2.96].forEach((m,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f*m;g.gain.setValueAtTime(0,t0+t);g.gain.linearRampToValueAtTime(v/(i+1.4),t0+t+.04);g.gain.exponentialRampToValueAtTime(.0005,t0+t+d/(1+i*.35));o.connect(g);g.connect(lp);o.start(t0+t);o.stop(t0+t+d+.1)})};
+  const drone=(f,v)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+2.5);g.gain.linearRampToValueAtTime(0,t0+12.2);o.connect(g);g.connect(out);o.start(t0);o.stop(t0+12.4)};
   const C4=261.63,D4=293.66,E4=329.63,G4=392,A4=440,C5=523.25,D5=587.33,E5=659.25,G5=783.99;
   if(lose==='quit'){
     gong(110,0,.3,5);drone(55,.07);drone(82.41,.04);
@@ -504,7 +504,7 @@ function showWin(m,lose){
   el.innerHTML=art+`<div class="win-t"><div class="win-k${ks}">${k}</div><div class="win-s">${esc(sub)}</div><div class="win-seal">${seal}</div><div class="win-p">« ${esc(q[0])} »<br><span>${esc(q[1])}</span></div></div><div class="win-h">Touche pour continuer</div>`;
   const stopM=winMusic(lose);let done=false;const close=()=>{if(done)return;done=true;if(stopM)stopM();el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false;try{champCheck()}catch(e){}},650)};
   el.onclick=close;document.body.appendChild(el);
-  const sb=document.createElement('button');sb.className='win-snd';sb.textContent=sndOn?'🔊':'🔇';sb.setAttribute('aria-label','Son');sb.onclick=ev=>{ev.stopPropagation();sndOn=!sndOn;try{ls.set('pfc_snd',sndOn?'1':'0')}catch(e){}sb.textContent=sndOn?'🔊':'🔇';if(!sndOn){if(stopM)stopM()}};el.appendChild(sb);setTimeout(close,small?4500:9000);
+  const sb=document.createElement('button');sb.className='win-snd';sb.textContent=sndOn?'🔊':'🔇';sb.setAttribute('aria-label','Son');sb.onclick=ev=>{ev.stopPropagation();sndOn=!sndOn;try{ls.set('pfc_snd',sndOn?'1':'0')}catch(e){}sb.textContent=sndOn?'🔊':'🔇';if(!sndOn){if(stopM)stopM()}};el.appendChild(sb);setTimeout(close,small?6500:12000);
 }
 function pendingOf(key,list){
   let seen=null;try{seen=JSON.parse(ls.get(key)||'null')}catch(e){}
