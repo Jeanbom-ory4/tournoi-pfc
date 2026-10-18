@@ -161,8 +161,8 @@ function render(){
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
-  champCheck();
   winCheck();
+  champCheck();
 }
 function setTab(t){tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render()}
 
@@ -275,7 +275,7 @@ function confetti(){
 // Déclenche l'explosion une seule fois par appareil, dès que le joueur connecté est vu comme champion
 function champCheck(){
   const id=me(),fin=S.cfg&&S.matches[mk(S.cfg.rounds-1,0)];
-  if(!id||!fin||fin.w!==id)return;
+  if(!id||!fin||fin.w!==id||winShowing)return;
   const sig=id+'|'+(fin.hist||[]).map(h=>h.a+h.b).join('');
   if(confSig===sig||ls.get('pfc_conf')===sig)return;
   confSig=sig;ls.set('pfc_conf',sig);confetti();
@@ -361,11 +361,12 @@ ${petals}
 const WIN_Q=[
   ['Un voyage de mille lieues commence par un pas.','Lao-tseu'],
   ['Il n’y a pas de meilleur miroir qu’un véritable ami.','Proverbe japonais'],
-  ['Si trois personnes marchent ensemble, je trouve forcément parmi elles un maître.','Confucius'],
-  ['Le bien suprême est comme l’eau : elle nourrit tous les êtres sans lutter contre eux.','Lao-tseu'],
-  ['Les moments passés ne reviennent pas. Chaque seconde est précieuse. Il est donc capital de prendre soin de chaque rencontre, même insignifiante.','Proverbe japonais']
+  ['Choisissez un travail que vous aimez et vous n’aurez pas à travailler un seul jour de votre vie.','Confucius'],
+  ['Qui triomphe des autres est fort ; qui triomphe de lui-même est puissant.','Lao-tseu'],
+  ['Celui qui excelle à résoudre les difficultés le fait avant qu’elles ne surviennent.','Sun Tzu'],
+  ['Le bien suprême est comme l’eau : elle nourrit tous les êtres sans lutter contre eux.','Lao-tseu']
 ];
-function winQuote(r,R){const T=R-1,L=WIN_Q.length;return WIN_Q[T<=1?L-1:Math.min(L-1,Math.round(r*(L-1)/(T-1)))]}
+function winQuote(r,R,fin){const L=WIN_Q.length,N=R-1;if(fin)return WIN_Q[L-1];return WIN_Q[N<=1?L-2:Math.min(L-2,Math.round(r*(L-2)/(N-1)))]}
 
 /* musique de victoire : synthèse Web Audio (cithare pentatonique + gong doux), aucun fichier audio */
 let actx=null,sndOn=(()=>{try{return ls.get('pfc_snd')!=='0'}catch(e){return true}})();
@@ -405,19 +406,20 @@ function showWin(m,lose){
     sub=m.id==='third'?'Tu termines quatrième':m.r>=R-1?'Tu termines deuxième':m.r===R-2?'Cap sur la petite finale':'Fin de ton parcours';
     seal='<svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#8e3a4f"/><g fill="#fbe7ee"><circle cx="30" cy="19" r="7"/><circle cx="41" cy="27" r="7"/><circle cx="37" cy="40" r="7"/><circle cx="23" cy="40" r="7"/><circle cx="19" cy="27" r="7"/></g><circle cx="30" cy="30" r="5" fill="#8e3a4f"/></svg>';
   }else{
-    const nl=rlabel(m.r+1);art=winArt();k='Victoire';q=winQuote(m.r,R);
-    sub='En route '+(nl==='Finale'?'vers la Finale':/^Tour/.test(nl)?'vers le '+nl:'vers les '+nl);
+    const isThird=m.id==='third',isFinal=!isThird&&m.r>=R-1;art=winArt();k='Victoire';q=winQuote(m.r,R,isThird||isFinal);
+    if(isThird)sub='Une belle fin de parcours';else if(isFinal)sub='Au sommet du tournoi';
+    else{const nl=rlabel(m.r+1);sub='En route '+(nl==='Finale'?'vers la Finale':/^Tour/.test(nl)?'vers le '+nl:'vers les '+nl)}
     seal='<svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg>';
   }
   const el=document.createElement('div');el.className='win-ov'+(small?' win-rm':'')+(lose?' win-lose':'');
   el.innerHTML=art+`<div class="win-t"><div class="win-k">${k}</div><div class="win-s">${esc(sub)}</div><div class="win-seal">${seal}</div><div class="win-p">« ${esc(q[0])} »<br><span>${esc(q[1])}</span></div></div><div class="win-h">Touche pour continuer</div>`;
-  const stopM=winMusic(lose);let done=false;const close=()=>{if(done)return;done=true;if(stopM)stopM();el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false},650)};
+  const stopM=winMusic(lose);let done=false;const close=()=>{if(done)return;done=true;if(stopM)stopM();el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false;try{champCheck()}catch(e){}},650)};
   el.onclick=close;document.body.appendChild(el);
   const sb=document.createElement('button');sb.className='win-snd';sb.textContent=sndOn?'🔊':'🔇';sb.setAttribute('aria-label','Son');sb.onclick=ev=>{ev.stopPropagation();sndOn=!sndOn;try{ls.set('pfc_snd',sndOn?'1':'0')}catch(e){}sb.textContent=sndOn?'🔊':'🔇';if(!sndOn){if(stopM)stopM()}};el.appendChild(sb);setTimeout(close,small?4500:9000);
 }
 function winCheck(){
   const id=me();if(!id||!S.cfg||S.cfg.started===false||winShowing)return;
-  const wins=Object.entries(S.matches).filter(([k,m])=>m.w===id&&m.a&&m.b&&k!=='third'&&m.r<S.cfg.rounds-1).map(([k,m])=>({...m,id:k})).sort((x,y)=>y.r-x.r);
+  const wins=Object.entries(S.matches).filter(([k,m])=>m.w===id&&m.a&&m.b).map(([k,m])=>({...m,id:k})).sort((x,y)=>y.r-x.r);
   const key='pfc_win_'+(S.cfg.tid||'')+'_'+id;let seen=null;
   try{seen=JSON.parse(ls.get(key)||'null')}catch(e){}
   const ids=wins.map(m=>m.id);
