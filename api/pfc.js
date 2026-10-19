@@ -43,6 +43,21 @@ const pub = ({ cfg, matches }) => ({
   matches: Object.fromEntries(Object.entries(matches).map(([k, { rem, ...m }]) => [k, { ...m, pend: m.pend ? { by: m.pend.by } : null }])),
 });
 const out = (st) => ({ ...pub(st), now: Date.now() });
+// Présence « en ligne » : chaque appli ouverte envoie un signal toutes les ~20 s ; la clé expire seule après 90 s.
+// Un joueur qui a choisi « Apparaître hors ligne » (b.hid) n'écrit rien. On ne renvoie que les joueurs des matchs en cours.
+const seenKey = (cfg, id) => 'pfc:seen:' + (cfg.tid || '') + ':' + id;
+async function presence(cfg, matches, b) {
+  const me = who(b.token, cfg.tid || '');
+  if (me && cfg.players.some((p) => p.id === me)) {
+    if (b.hid) await redis.del(seenKey(cfg, me)); else await redis.set(seenKey(cfg, me), 1, { ex: 90 });
+  }
+  const want = new Set();
+  for (const m of Object.values(matches)) if (m && m.a && m.b && !m.w) { want.add(m.a); want.add(m.b); }
+  const l = [...want];
+  if (!l.length) return [];
+  const v = await redis.mget(...l.map((i) => seenKey(cfg, i)));
+  return l.filter((_, k) => v[k]);
+}
 async function wipe() {
   const cfg = await redis.get('pfc:cfg');
   if (cfg) await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
@@ -116,7 +131,11 @@ module.exports = async (req, res) => {
     const b = req.body || {}, a = b.action;
     if (!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) || !(process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN))
       return res.status(500).json({ error: 'Redis non configuré : ajoute une base Upstash Redis au projet Vercel puis redéploie.' });
-    if (a === 'state') return res.json(out(await sweep(await load())));
+    if (a === 'state') {
+      const st = await sweep(await load()), o = out(st);
+      if (b.ping && st.cfg) { try { o.on = await presence(st.cfg, st.matches, b); } catch (e) { /* la présence est facultative */ } }
+      return res.json(o);
+    }
 
     if (a === 'login') {
       const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
