@@ -15,6 +15,10 @@ button{touch-action:manipulation}
 .selr{border-color:transparent;background:linear-gradient(#fff,#fff) padding-box,conic-gradient(from var(--ang),rgba(250,204,21,.2) 0deg,rgba(250,204,21,.2) 190deg,#facc15 320deg,#fff6a8 360deg) border-box;animation:selspin 4s linear infinite}
 @keyframes selspin{to{--ang:360deg}}
 @media (prefers-reduced-motion:reduce){.selr{animation:none;border-color:#fde047;background:#fff}}
+.pdot{display:inline-block;width:.62rem;height:.62rem;border-radius:50%;border:1.5px solid rgba(255,255,255,.6);margin-right:.35rem;vertical-align:middle;flex:none;box-sizing:border-box}
+.pdot.on{border-color:#a7f3d0;background:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.30),0 0 8px rgba(52,211,153,.9);animation:pdp 2.4s ease-in-out infinite}
+@keyframes pdp{50%{box-shadow:0 0 0 4px rgba(52,211,153,.12),0 0 12px rgba(52,211,153,1)}}
+@media (prefers-reduced-motion:reduce){.pdot.on{animation:none}}
 .sym{display:flex;align-items:center;justify-content:center;height:3.6rem;line-height:1}
 .rv{padding:1rem .75rem 1.15rem;box-shadow:0 6px 16px rgba(0,0,0,.35)}
 .rv-l,.rv-v,.rv-t{text-shadow:0 1px 3px rgba(0,0,0,.4),0 0 1px rgba(0,0,0,.25)}   /* fine ombre derrière les lettres */
@@ -136,8 +140,13 @@ const toInput=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*60000).toISOStrin
 const mlabel=m=>m.id==='third'?'Petite finale (3e place)':rlabel(m.r);
 const wrap=h=>`<div class="card p-4 mb-3">${h}</div>`;
 const now=()=>Date.now()+skew;
-function norm(j){if(j&&j.now){skew=j.now-Date.now();delete j.now}return j}
-const loadState=async()=>norm(await api('state'));
+function norm(j){if(j&&j.now){skew=j.now-Date.now();delete j.now}if(j&&!j.on&&S&&S.on)j.on=S.on;return j}   // « on » : joueurs en ligne (reçu seulement à chaque signal de présence)
+let hid=ls.get('pfc_hid')==='1',lastPing=0;   // hid : « Apparaître hors ligne »
+const isOn=id=>!!id&&!!S.on&&S.on.includes(id);
+const pdot=id=>`<span class="pdot${isOn(id)?' on':''}"></span>`;
+const presTxt=id=>`<span class="pdot${isOn(id)?' on':''}"></span>${isOn(id)?'En ligne':'Hors ligne'}`;
+function toggleHid(){hid=!hid;ls.set('pfc_hid',hid?'1':'0');lastPing=0;lastSig='';render();refresh()}
+const loadState=async()=>{const ping=Date.now()-lastPing>=20000;if(ping)lastPing=Date.now();return norm(await api('state',ping?{ping:true,hid}:{}))};
 const cd=ms=>{if(ms<=0)return 'délai dépassé';const h=Math.floor(ms/3.6e6),mn=Math.floor(ms%3.6e6/6e4);return h+' h '+String(mn).padStart(2,'0')};
 setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.dataset.cd-now();el.textContent=cd(d);if(d<=0&&!document.hidden)refresh()}),30000);
 
@@ -145,7 +154,7 @@ setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.
 function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
 async function refresh(){
   const f=document.activeElement;
-  if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
+  if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.type!=='checkbox'&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
   try{S=await loadState();loadErr=null}catch(e){loadErr=e.message+(e.status?' (HTTP '+e.status+')':'')}
   loaded=true;
   if(adminKey&&tab==='admin'){try{adm=await api('admin')}catch(e){if(e.status===401){adminKey='';ls.del('pfc_ak')}}}
@@ -206,7 +215,7 @@ function jeuView(){
   }
   const side=m.a===id?'a':'b',o=side==='a'?'b':'a',opp=m[o],mine=m['s'+side],theirs=m['s'+o];
   const locked=m.pend&&m.pend.by===side;
-  const score=`<div class="text-center"><div class="text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div><div class="text-5xl font-black my-2">${mine} - ${theirs}</div><div class="font-semibold">Toi vs ${pn(opp)}</div></div>`;
+  const score=`<div class="text-center"><div class="text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div><div class="text-5xl font-black my-2">${mine} - ${theirs}</div><div class="font-semibold">Toi vs ${pn(opp)}</div><div class="text-sm mt-1 opacity-95">${presTxt(opp)}</div></div>`;
   let status,act='';
   if(locked)status=`<div class="mt-4 p-3 rounded-2xl bg-yellow-400 text-yellow-950 font-bold text-center">🔒 Coup verrouillé. En attente du coup de ${pn(opp)}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ ${pn(opp)} doit jouer avant d'être éliminé(e) : reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`;
   else{
@@ -223,7 +232,8 @@ function jeuView(){
     last=`<div class="mt-4 rounded-2xl rv ${r[1]} text-center${pc}"><div class="rv-l">Dernier tour révélé</div><div class="rv-v">${E[h[side]]} <b>VS</b> ${E[h[o]]}</div><div class="rv-t">${r[0]}</div></div>
     <div class="hg">${m.hist.map((x,i)=>{const k=x.w==='='?'t':x.w===side?'w':'l',ic=k==='w'?'<path d="M4 12l6 6L20 6" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>':k==='l'?'<path d="M5 5l14 14M19 5L5 19" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>':'<path d="M5 9h14M5 16h14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>',g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr"><span class="hn">${i+1}.</span><span class="hs">${g(x[side])}${g(x[o])}</span><span class="hb ${k}"><svg viewBox="0 0 24 24">${ic}</svg></span></div>`}).join('')}</div>`;
   }
-  return wrap(head+score+status+act+last);
+  const vis=`<div class="text-center mt-5"><label class="inline-flex items-center gap-2 text-sm opacity-90"><input type="checkbox" ${hid?'checked':''} onchange="toggleHid()" class="w-5 h-5"> Apparaître hors ligne</label></div>`;
+  return wrap(head+score+status+act+last+vis);
 }
 function loginView(){
   if(!lg.id)return wrap(`<p class="font-bold text-center mb-3">Qui es-tu ?</p><div class="grid grid-cols-2 gap-2">${[...S.cfg.players].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(p=>`<button onclick="lg={id:'${p.id}',pin:'',err:false};render()" class="card py-3 px-2 font-bold flex items-center justify-center text-center leading-tight break-words min-h-[3.5rem]">${(()=>{const k=p.name.indexOf("(");return k>0?`<span><span class="block">${esc(p.name.slice(0,k).trim())}</span><span class="block text-xs font-semibold opacity-80 mt-0.5">${esc(p.name.slice(k).trim())}</span></span>`:`<span>${esc(p.name)}</span>`})()}</button>`).join('')}</div>`);
@@ -558,7 +568,7 @@ function bracketView(){
   const R=S.cfg.rounds,fin=S.matches[mk(R-1,0)],th=S.matches.third,id=me(),pw=x=>x&&x!=='none'?pn(x):'—';
   const CW=152,SLOT=80,CARD=64,LAB=56;
   const card=m=>{
-    const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid?pn(pid)+(m.ff===pid?(m.ab===pid?' 🏳️':' ⏱'):''):'À définir'}</span><span>${s}</span></div>`;
+    const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid&&m.a&&m.b&&!m.w?pdot(pid):''}${pid?pn(pid)+(m.ff===pid?(m.ab===pid?' 🏳️':' ⏱'):''):'À définir'}</span><span>${s}</span></div>`;
     const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
     return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:${CARD}px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
   };
@@ -605,13 +615,13 @@ function openMatch(k){watch=k;render();window.scrollTo(0,0)}
 function matchView(k){
   const m=S.matches[k],back=`<button onclick="watch=null;render()" class="mb-3 px-3 py-2 rounded-xl card text-sm font-bold">← Retour au tableau</button>`;
   if(!m)return back+wrap('<p class="text-center">Match introuvable.</p>');
-  const A=pn(m.a)||'À définir',B=pn(m.b)||'À définir',pl=pn(m.pend?(m.pend.by==='a'?m.a:m.b):null),wt=pn(m.pend?(m.pend.by==='a'?m.b:m.a):null);
+  const op=!!(m.a&&m.b&&!m.w),A=pn(m.a)||'À définir',B=pn(m.b)||'À définir',pl=pn(m.pend?(m.pend.by==='a'?m.a:m.b):null),wt=pn(m.pend?(m.pend.by==='a'?m.b:m.a):null);
   const st=m.w?`<div class="mt-3 p-3 rounded-2xl won-bg text-center font-bold" style="box-shadow:0 6px 16px rgba(0,0,0,.35);color:#0b1f13">🏁 Vainqueur : ${pn(m.w)||'—'}${m.ff?`<div class="text-base font-semibold mt-1">${m.ab===m.ff?'🏳️ '+pn(m.ff)+' a abandonné':'⏱ '+pn(m.ff)+' éliminé(e) : délai dépassé'}</div>`:''}</div>`
     :m.pend?`<div class="mt-3 p-3 rounded-2xl bg-yellow-400 text-yellow-950 text-center font-bold">🔒 ${pl} a joué son coup (secret). En attente de ${wt}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`
     :`<div class="mt-3 p-3 rounded-2xl card text-center">${m.a&&m.b?'Prochain tour à jouer…':'Match pas encore défini'}</div>`;
   const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>{const g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr ${x.w==='='?'tt':x.w==='a'?'wa':'wb'}"><span class="hn">${i+1}.</span><span class="c">${g(x.a)}</span><i>vs</i><span class="c">${g(x.b)}</span></div>`}).join('')}</div>`:'';
   return back+wrap(`<div class="text-center text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div>
-    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}</div><div class="text-4xl font-black text-center" style="min-width:5.5rem">${m.sa} - ${m.sb}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}</div></div>${st}
+    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-4xl font-black text-center" style="min-width:5.5rem">${m.sa} - ${m.sb}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${st}
     ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
     <p class="text-xs text-center mt-3 opacity-70">👁 Mode spectateur : un coup en attente reste secret tant que les deux joueurs n'ont pas joué.</p>`);
 }
