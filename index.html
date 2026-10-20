@@ -188,7 +188,8 @@ function myMatch(){
   const id=me();
   return Object.entries(S.matches).map(([k,m])=>({id:k,...m})).filter(m=>(m.a===id||m.b===id)&&m.a&&m.b).sort((x,y)=>x.r-y.r).find(m=>!m.w)||null;
 }
-function jeuView(){
+function jeuView(){const h=jeuView0();return h+(svEligible()?svCard():'')}
+function jeuView0(){
   if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
   const id=me(),when=S.cfg.started===false&&S.cfg.startAt?fmtWhen(S.cfg.startAt):'';
   if(!id)return (when?wrap('<p class="text-center font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>'):'')+loginView();
@@ -235,6 +236,53 @@ function jeuView(){
   const vis=`<div class="text-center mt-5"><label class="inline-flex items-center gap-2 text-sm opacity-90"><input type="checkbox" ${hid?'checked':''} onchange="toggleHid()" class="w-5 h-5"> Apparaître hors ligne</label></div>`;
   return wrap(head+score+status+act+last+vis);
 }
+
+// ---- Sondage anonyme (éliminés + vainqueurs finale / petite finale) ----
+let sv={st:'idle',s:null,i:'',done:false,open:false,busy:false,err:''};
+const svDismissKey=()=>'pfc_svx_'+(S.cfg?S.cfg.tid:'')+'_'+me();
+function svEligible(){
+  const id=me();if(!id||!S.cfg||S.cfg.started===false||myMatch())return false;
+  const fin=S.matches[mk(S.cfg.rounds-1,0)],th=S.matches.third;
+  return !!(fin&&fin.w===id)||!!(th&&th.w===id)||Object.values(S.matches).some(x=>x.w&&x.a&&x.b&&(x.a===id||x.b===id)&&x.w!==id);
+}
+async function svLoad(){
+  sv.st='loading';
+  try{const j=await api('surveyget');if(j.r){sv.s=j.r.s;sv.i=j.r.i||'';sv.done=true}else sv.open=ls.get(svDismissKey())!=='1';sv.st='ready'}
+  catch(e){sv.st='idle';if(e.status===401)return;sv.st='ready';sv.open=true}
+  lastSig='';render();
+}
+function svCard(){
+  if(sv.st==='idle'){svLoad();return ''}
+  if(sv.st==='loading')return '';
+  if(sv.done&&!sv.open)return `<div class="card p-4 mb-3 text-center"><p class="font-bold">Merci pour ton avis ! 😊</p><button onclick="sv.open=true;render()" class="mt-2 text-sm underline opacity-80">Modifier ma réponse</button></div>`;
+  if(!sv.open)return `<div class="text-center mb-3"><button onclick="sv.open=true;render()" class="px-4 py-2 rounded-xl card text-sm font-bold">💬 Donner mon avis (anonyme)</button></div>`;
+  const nb=Array.from({length:10},(_,k)=>k+1).map(k=>`<button onclick="sv.s=${sv.s===k?'null':k};render()" class="py-3 rounded-xl font-black text-lg ${sv.s===k?'bg-yellow-300 text-yellow-950':'card'}" aria-label="Note ${k} sur 10">${k}</button>`).join('');
+  return `<div class="card p-4 mb-3"><p class="font-black text-lg text-center">💬 Ton avis sur le jeu</p>
+  <p class="text-sm text-center opacity-90 mt-1">Sondage <b>anonyme</b> : seul l'organisateur lit les réponses, sans ton nom. Tout est facultatif.</p>
+  <p class="font-bold mt-4 mb-2">Ta note, de 1 à 10 :</p><div class="grid grid-cols-5 gap-2">${nb}</div>
+  <div class="flex justify-between text-xs opacity-80 mt-1 px-1"><span>Bof</span><span>Super !</span></div>
+  <p class="font-bold mt-4 mb-2">Une idée de jeu pour un prochain tournoi ?</p>
+  <textarea id="svi" rows="3" maxlength="500" oninput="sv.i=this.value" placeholder="Ex. : un quiz, un blind test, un tournoi de morpion…" class="w-full rounded-xl p-3 text-slate-900">${esc(sv.i)}</textarea>
+  <p class="text-center text-sm min-h-[1.25rem] mt-2 text-yellow-200">${esc(sv.err)}</p>
+  <button ${sv.busy?'disabled':''} onclick="svSend()" class="w-full mt-1 py-3 rounded-2xl font-black bg-yellow-300 text-yellow-950">${sv.busy?'Envoi…':sv.done?'Mettre à jour ma réponse':'Envoyer mon avis'}</button>
+  ${sv.done?'':`<button onclick="ls.set(svDismissKey(),'1');sv.open=false;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Plus tard</button>`}</div>`;
+}
+async function svSend(){
+  sv.err='';const idea=(sv.i||'').trim();
+  if(sv.s===null&&!idea){sv.err='Choisis une note ou écris une idée.';render();return}
+  sv.busy=true;render();
+  try{await api('survey',{score:sv.s,idea});sv.done=true;sv.open=false;ls.del(svDismissKey())}
+  catch(e){sv.err=e.status===401?'Ta connexion n\'est plus valide : reconnecte-toi.':'Envoi impossible, réessaie.'}
+  sv.busy=false;lastSig='';render();
+}
+function svAdmin(){
+  const r=adm&&adm.survey;if(!r)return '';
+  const mx=Math.max(1,...r.dist);
+  const bars=r.dist.map((c,k)=>`<div class="flex items-center gap-2 text-sm"><span class="w-6 text-right font-bold">${k+1}</span><div class="flex-1 h-3 rounded bg-white/15"><div class="h-3 rounded bg-yellow-300" style="width:${c/mx*100}%"></div></div><span class="w-6">${c}</span></div>`).join('');
+  return wrap(`<p class="font-bold mb-2">📊 Sondage (anonyme)</p><p class="text-sm mb-2">${r.total} réponse${r.total>1?'s':''}${r.n?` · note moyenne : <b>${String(r.avg).replace('.',',')} / 10</b> (${r.n} note${r.n>1?'s':''})`:''}</p>${r.n?`<div class="space-y-1 mb-3">${bars}</div>`:''}
+  <p class="font-bold text-sm mb-1">💡 Idées de jeux (${r.ideas.length})</p>${r.ideas.length?`<ul class="text-sm space-y-1">${r.ideas.map(x=>`<li class="rounded-lg bg-white/10 px-2 py-1">${esc(x.i)}</li>`).join('')}</ul><button onclick="svCopy()" class="mt-2 px-3 py-1.5 rounded-xl card text-xs font-bold">Copier les idées</button>`:'<p class="text-sm opacity-80">Aucune idée pour le moment.</p>'}`);
+}
+function svCopy(){const t=(adm&&adm.survey?adm.survey.ideas:[]).map(x=>'- '+x.i).join('\n');try{navigator.clipboard.writeText(t)}catch(e){}}
 function loginView(){
   if(!lg.id)return wrap(`<p class="font-bold text-center mb-3">Qui es-tu ?</p><div class="grid grid-cols-2 gap-2">${[...S.cfg.players].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(p=>`<button onclick="lg={id:'${p.id}',pin:'',err:false};render()" class="card py-3 px-2 font-bold flex items-center justify-center text-center leading-tight break-words min-h-[3.5rem]">${(()=>{const k=p.name.indexOf("(");return k>0?`<span><span class="block">${esc(p.name.slice(0,k).trim())}</span><span class="block text-xs font-semibold opacity-80 mt-0.5">${esc(p.name.slice(k).trim())}</span></span>`:`<span>${esc(p.name)}</span>`})()}</button>`).join('')}</div>`);
   return wrap(`<p class="font-bold text-center">${pn(lg.id)}</p><p class="text-center text-sm mb-3 opacity-80">Saisis ton code à 4 caractères (lettres et chiffres)</p>
@@ -255,7 +303,7 @@ async function pinIn(el){
   }
   render();
 }
-function logout(){tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
+function logout(){sv={st:'idle',s:null,i:'',done:false,open:false,busy:false,err:''};tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
 async function quitT(id){
   if(busy)return;
   if(!confirm('Veux-tu vraiment abandonner le tournoi ?\n\nTu seras éliminé(e) et ton adversaire passera directement au tour suivant. Cette action est définitive.'))return;
@@ -684,6 +732,7 @@ function adminView(){
     const head=`<div>${m.id==='third'?'🥉 ':m.r===S.cfg.rounds-1?'🏆 ':''}${pn(m.a)} ${m.sa}-${m.sb} ${pn(m.b)}</div>`;
     if(m.pend){const w=m.pend.by==='a'?m.b:m.a;return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">${pn(w)} doit jouer · reste <b data-cd="${m.due}">${cd(m.due-now())}</b></div><div class="flex gap-2 mt-1">${bt('+24 h',`adm2('extend','${k}')`)}${bt('Éliminer '+pn(w),`adm2('forfeit','${k}','${w}')`)}</div></div>`}
     return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`)}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`)}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
+  h+=svAdmin();
   h+=wrap(`<button onclick="resetT()" class="w-full py-3 rounded-2xl ${confirmReset?'bg-rose-600':'card'} font-bold">${confirmReset?'Confirmer : tout supprimer':'Réinitialiser le tournoi'}</button><button onclick="adminKey='';ls.del('pfc_ak');adm=null;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Quitter l'espace organisateur</button>`);
   return h;
 }
