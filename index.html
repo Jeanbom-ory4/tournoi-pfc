@@ -257,16 +257,19 @@ function svCard(){
   if(sv.done&&!sv.open)return `<div class="card p-4 mb-3 text-center"><p class="font-bold">Merci pour ton avis ! 😊</p><button onclick="sv.open=true;render()" class="mt-2 text-sm underline opacity-80">Modifier ma réponse</button></div>`;
   if(!sv.open)return `<div class="text-center mb-3"><button onclick="sv.open=true;render()" class="px-4 py-2 rounded-xl card text-sm font-bold">💬 Donner mon avis (anonyme)</button></div>`;
   const nb=Array.from({length:10},(_,k)=>k+1).map(k=>`<button onclick="sv.s=${sv.s===k?'null':k};render()" class="py-3 rounded-xl font-black text-lg ${sv.s===k?'bg-yellow-300 text-yellow-950':'card'}" aria-label="Note ${k} sur 10">${k}</button>`).join('');
+  setTimeout(svCnt,0);
   return `<div class="card p-4 mb-3"><p class="font-black text-lg text-center">💬 Ton avis sur le jeu</p>
   <p class="text-sm text-center opacity-90 mt-1">Sondage <b>anonyme</b> : seul l'organisateur lit les réponses, sans ton nom. Tout est facultatif.</p>
   <p class="font-bold mt-4 mb-2">Ta note, de 1 à 10 :</p><div class="grid grid-cols-5 gap-2">${nb}</div>
   <div class="flex justify-between text-xs opacity-80 mt-1 px-1"><span>Bof</span><span>Super !</span></div>
   <p class="font-bold mt-4 mb-2">Une idée de jeu pour un prochain tournoi ?</p>
-  <textarea id="svi" rows="3" maxlength="500" oninput="sv.i=this.value" placeholder="Ex. : un quiz, un blind test, un tournoi de morpion…" class="w-full rounded-xl p-3 text-slate-900">${esc(sv.i)}</textarea>
+  <textarea id="svi" rows="3" maxlength="500" oninput="sv.i=this.value;svCnt()" placeholder="Ex. : un quiz, un blind test, un tournoi de morpion…" class="w-full rounded-xl p-3 text-slate-900">${esc(sv.i)}</textarea>
+  <p id="svc" class="text-xs text-right mt-1 opacity-80"></p>
   <p class="text-center text-sm min-h-[1.25rem] mt-2 text-yellow-200">${esc(sv.err)}</p>
   <button ${sv.busy?'disabled':''} onclick="svSend()" class="w-full mt-1 py-3 rounded-2xl font-black bg-yellow-300 text-yellow-950">${sv.busy?'Envoi…':sv.done?'Mettre à jour ma réponse':'Envoyer mon avis'}</button>
   ${sv.done?'':`<button onclick="ls.set(svDismissKey(),'1');sv.open=false;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Plus tard</button>`}</div>`;
 }
+function svCnt(){const el=document.getElementById('svc');if(!el)return;const n=Math.max(0,500-(sv.i||'').length);el.textContent=n+(n>1?' caractères restants':' caractère restant');el.style.fontWeight=n<=50?'700':'';el.style.opacity=n<=50?'1':''}
 async function svSend(){
   sv.err='';const idea=(sv.i||'').trim();
   if(sv.s===null&&!idea){sv.err='Choisis une note ou écris une idée.';render();return}
