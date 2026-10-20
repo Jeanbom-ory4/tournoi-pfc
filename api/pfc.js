@@ -58,9 +58,26 @@ async function presence(cfg, matches, b) {
   const v = await redis.mget(...l.map((i) => seenKey(cfg, i)));
   return l.filter((_, k) => v[k]);
 }
+// Sondage anonyme : une réponse par joueur, rangée sous un code haché (le nom n'est jamais stocké ni affiché).
+// Réponse possible seulement quand le joueur n'a plus de match à jouer : éliminé, ou vainqueur de la finale / petite finale.
+const svKey = (cfg) => 'pfc:sv:' + (cfg.tid || '');   // les réponses sont propres au tournoi en cours : la réinitialisation les efface
+const svId = (cfg, id) => crypto.createHmac('sha256', SECRET).update('sv:' + (cfg.tid || '') + ':' + id).digest('hex').slice(0, 24);
+const svOk = (cfg, matches, id) => {
+  const fin = matches[mk(cfg.rounds - 1, 0)], th = matches.third;
+  if (fin && fin.w === id) return true;
+  if (th && th.w === id) return true;
+  return Object.values(matches).some((m) => m && m.w && m.a && m.b && (m.a === id || m.b === id) && m.w !== id);
+};
+async function svResults(cfg) {
+  const all = (await redis.hgetall(svKey(cfg))) || {}, rows = Object.values(all).map((v) => (typeof v === 'string' ? JSON.parse(v) : v));
+  const dist = Array(10).fill(0); let sum = 0, n = 0;
+  rows.forEach((r) => { if (r.s >= 1 && r.s <= 10) { dist[r.s - 1]++; sum += r.s; n++; } });
+  const ideas = rows.filter((r) => r.i).sort((x, y) => y.t - x.t).map((r) => ({ i: r.i, t: r.t }));
+  return { total: rows.length, n, avg: n ? Math.round(sum / n * 10) / 10 : null, dist, ideas };
+}
 async function wipe() {
   const cfg = await redis.get('pfc:cfg');
-  if (cfg) await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
+  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), redis.del(svKey(cfg))]);   // matchs, présence et sondage
   await redis.del('pfc:cfg', 'pfc:pins', 'pfc:emails'); // 'pfc:emails' : nettoyage d'anciennes données
 }
 // Termine un match : désigne le vainqueur (ff = joueur éliminé pour dépassement de délai) et le fait avancer
@@ -161,6 +178,20 @@ module.exports = async (req, res) => {
       m.ab = me;
       await finish(st.cfg, m, m.a === me ? m.b : m.a, me);
       return res.json(out(await load()));
+    }
+
+    if (a === 'surveyget' || a === 'survey') {   // sondage (joueur identifié par son jeton)
+      const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || '');
+      if (!me || !cfg.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
+      const st = await load();
+      if (!svOk(cfg, st.matches, me)) return res.status(409).json({ error: 'notyet' });
+      const f = svId(cfg, me);
+      if (a === 'surveyget') { const v = await redis.hget(svKey(cfg), f); return res.json({ r: v ? (typeof v === 'string' ? JSON.parse(v) : { s: v.s, i: v.i }) : null }); }
+      const sc = b.score === null || b.score === undefined || b.score === '' ? null : Number(b.score), idea = String(b.idea || '').replace(/\s+/g, ' ').trim().slice(0, 500);
+      if (sc !== null && !(Number.isInteger(sc) && sc >= 1 && sc <= 10)) return res.status(400).json({ error: 'note' });
+      if (sc === null && !idea) return res.status(400).json({ error: 'vide' });
+      await redis.hset(svKey(cfg), { [f]: { s: sc, i: idea, t: Date.now() } });
+      return res.json({ ok: 1 });
     }
 
     if (a === 'play') {
@@ -280,7 +311,7 @@ module.exports = async (req, res) => {
       if (a === 'admin') {
         const cfg = await redis.get('pfc:cfg'), locks = {};
         if (cfg) for (const p of cfg.players) { const st = await redis.get(lockKey(cfg, p.id)); if (st && st.until > Date.now()) locks[p.id] = st.until; }
-        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks });
+        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, survey: cfg ? await svResults(cfg) : null });
       }
       if (a === 'reset') { await wipe(); return res.json({ ok: 1 }); }
 
