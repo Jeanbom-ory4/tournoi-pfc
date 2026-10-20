@@ -281,11 +281,18 @@ async function svSend(){
 function svAdmin(){
   const r=adm&&adm.survey;if(!r)return '';
   const mx=Math.max(1,...r.dist);
-  const bars=r.dist.map((c,k)=>`<div class="flex items-center gap-2 text-sm"><span class="w-6 text-right font-bold">${k+1}</span><div class="flex-1 h-3 rounded bg-white/15"><div class="h-3 rounded bg-yellow-300" style="width:${c/mx*100}%"></div></div><span class="w-6">${c}</span></div>`).join('');
+  const bars=r.dist.map((c,k)=>[c,k]).reverse().map(([c,k])=>`<div class="flex items-center gap-2 text-sm"><span class="w-6 text-right font-bold">${k+1}</span><div class="flex-1 h-3 rounded bg-white/15"><div class="h-3 rounded bg-yellow-300" style="width:${c/mx*100}%"></div></div><span class="w-6">${c}</span></div>`).join('');
   return wrap(`<p class="font-bold mb-2">📊 Sondage (anonyme)</p><p class="text-sm mb-2">${r.total} réponse${r.total>1?'s':''}${r.n?` · note moyenne : <b>${String(r.avg).replace('.',',')} / 10</b> (${r.n} note${r.n>1?'s':''})`:''}</p>${r.n?`<div class="space-y-1 mb-3">${bars}</div>`:''}
-  <p class="font-bold text-sm mb-1">💡 Idées de jeux (${r.ideas.length})</p>${r.ideas.length?`<ul class="text-sm space-y-1">${r.ideas.map(x=>`<li class="rounded-lg bg-white/10 px-2 py-1">${esc(x.i)}</li>`).join('')}</ul><button onclick="svCopy()" class="mt-2 px-3 py-1.5 rounded-xl card text-xs font-bold">Copier les idées</button>`:'<p class="text-sm opacity-80">Aucune idée pour le moment.</p>'}`);
+  <p class="font-bold text-sm mb-1">💡 Idées de jeux (${r.ideas.length})</p>${r.ideas.length?`<ul class="text-sm space-y-1">${r.ideas.map(x=>`<li class="rounded-lg bg-white/10 px-2 py-1">${esc(x.i)}</li>`).join('')}</ul><button onclick="svCopy()" class="mt-2 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition ${svOk==='ok'?'bg-emerald-400 text-emerald-950':svOk==='ko'?'bg-rose-500 text-white':'card'}">${svOk==='ok'?'✓ Copié !':svOk==='ko'?'Copie impossible':'Copier les idées'}</button>`:'<p class="text-sm opacity-80">Aucune idée pour le moment.</p>'}`);
 }
-function svCopy(){const t=(adm&&adm.survey?adm.survey.ideas:[]).map(x=>'- '+x.i).join('\n');try{navigator.clipboard.writeText(t)}catch(e){}}
+let svOk='',svTimer=null;
+async function svCopy(){
+  const t=(adm&&adm.survey?adm.survey.ideas:[]).map(x=>'- '+x.i).join('\n');let ok=false;
+  try{await navigator.clipboard.writeText(t);ok=true}catch(e){
+    try{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove()}catch(e2){}
+  }
+  svOk=ok?'ok':'ko';render();clearTimeout(svTimer);svTimer=setTimeout(()=>{svOk='';render()},2000);
+}
 function loginView(){
   if(!lg.id)return wrap(`<p class="font-bold text-center mb-3">Qui es-tu ?</p><div class="grid grid-cols-2 gap-2">${[...S.cfg.players].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(p=>`<button onclick="lg={id:'${p.id}',pin:'',err:false};render()" class="card py-3 px-2 font-bold flex items-center justify-center text-center leading-tight break-words min-h-[3.5rem]">${(()=>{const k=p.name.indexOf("(");return k>0?`<span><span class="block">${esc(p.name.slice(0,k).trim())}</span><span class="block text-xs font-semibold opacity-80 mt-0.5">${esc(p.name.slice(k).trim())}</span></span>`:`<span>${esc(p.name)}</span>`})()}</button>`).join('')}</div>`);
   return wrap(`<p class="font-bold text-center">${pn(lg.id)}</p><p class="text-center text-sm mb-3 opacity-80">Saisis ton code à 4 caractères (lettres et chiffres)</p>
