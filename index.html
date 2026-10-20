@@ -146,9 +146,9 @@ const isOn=id=>!!id&&!!S.on&&S.on.includes(id);
 const pdot=id=>`<span class="pdot${isOn(id)?' on':''}"></span>`;
 const presTxt=id=>`<span class="pdot${isOn(id)?' on':''}"></span>${isOn(id)?'En ligne':'Hors ligne'}`;
 function toggleHid(){hid=!hid;ls.set('pfc_hid',hid?'1':'0');lastPing=0;lastSig='';render();refresh()}
-const loadState=async()=>{const ping=Date.now()-lastPing>=20000;if(ping)lastPing=Date.now();return norm(await api('state',ping?{ping:true,hid}:{}))};
+const loadState=async()=>{const ping=Date.now()-lastPing>=18000;if(ping)lastPing=Date.now();return norm(await api('state',ping?{ping:true,hid}:{}))};
 const cd=ms=>{if(ms<=0)return 'délai dépassé';const h=Math.floor(ms/3.6e6),mn=Math.floor(ms%3.6e6/6e4);return h+' h '+String(mn).padStart(2,'0')};
-setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.dataset.cd-now();el.textContent=cd(d);if(d<=0&&!document.hidden)refresh()}),30000);
+setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.dataset.cd-now();el.textContent=cd(d);if(d<=0&&!document.hidden&&!idle())refresh()}),30000);
 
 // Déconnecte automatiquement si le tournoi a été réinitialisé (jeton d'un ancien tournoi)
 function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
@@ -163,8 +163,18 @@ async function refresh(){
   if(sig===lastSig)return;   // rien n'a changé : on ne redessine pas
   lastSig=sig;render();
 }
-setInterval(()=>{if(!document.hidden)refresh()},5000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+// Économie de requêtes : rafraîchissement toutes les 10 s, mis en pause après 5 min sans toucher l'écran (le joueur apparaît alors hors ligne)
+const IDLE_MS=300000;let lastAct=Date.now(),paused=false;
+const idle=()=>Date.now()-lastAct>=IDLE_MS;
+const idleBar=document.createElement('div');idleBar.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);max-width:92vw;padding:.55rem .9rem;border-radius:999px;background:rgba(20,10,35,.88);color:#fff;font-size:.8rem;font-weight:700;text-align:center;z-index:50;display:none';idleBar.textContent='⏸ Actualisation en pause : touche l\'écran pour reprendre';document.body.appendChild(idleBar);
+function wake(){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none';lastPing=0;refresh()}}
+['pointerdown','touchstart','keydown','scroll','mousemove'].forEach(e=>document.addEventListener(e,wake,{passive:true,capture:true}));
+setInterval(()=>{
+  if(document.hidden)return;
+  if(idle()){if(!paused){paused=true;idleBar.style.display='block'}return}
+  refresh();
+},10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none'}lastPing=0;refresh()}});
 refresh();
 
 function render(){
