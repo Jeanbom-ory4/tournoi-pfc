@@ -12,12 +12,13 @@ body{margin:0;min-height:100vh;color:#fff;background:linear-gradient(160deg,var(
 .pop{animation:pp .5s}@keyframes pp{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 button{touch-action:manipulation}
 @property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
-.selr{border-color:transparent;background:linear-gradient(#fff,#fff) padding-box,conic-gradient(from var(--ang),rgba(250,204,21,.2) 0deg,rgba(250,204,21,.2) 190deg,#facc15 320deg,#fff6a8 360deg) border-box;animation:selspin 4s linear infinite}
+.selr{border-color:transparent;background:linear-gradient(#fff,#fff) padding-box,conic-gradient(from var(--ang),rgba(250,204,21,.2) 0deg,rgba(250,204,21,.2) 95deg,#facc15 160deg,#fff6a8 180deg,rgba(250,204,21,.2) 180deg,rgba(250,204,21,.2) 275deg,#facc15 340deg,#fff6a8 360deg) border-box;animation:selspin 4s linear infinite}
 @keyframes selspin{to{--ang:360deg}}
 @media (prefers-reduced-motion:reduce){.selr{animation:none;border-color:#fde047;background:#fff}}
 @keyframes tdb{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.15;transform:scale(.75)}}
 .tdot{display:inline-block;animation:tdb 1.2s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.tdot{animation:none}}
+/* Effet d'avant (une seule lumière) : conic-gradient(from var(--ang),rgba(250,204,21,.2) 0deg,rgba(250,204,21,.2) 190deg,#facc15 320deg,#fff6a8 360deg) */
 /* Balle de match : éclair doré qui apparaît en fondu (0,5 s) à côté du score du joueur qui peut gagner d'un point */
 .mp-row{display:flex;align-items:center;justify-content:center}
 .mp-slot{display:inline-flex;align-items:center;justify-content:center;width:.66em;flex:none}
