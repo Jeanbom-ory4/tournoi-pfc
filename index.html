@@ -176,6 +176,7 @@ function wake(){lastAct=Date.now();if(paused){paused=false;idleBar.style.display
 setInterval(()=>{
   if(document.hidden)return;
   if(idle()){if(!paused){paused=true;idleBar.style.display='block'}return}
+  if(tab==='apropos'){if(me()&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
   refresh();
 },10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none'}lastPing=0;refresh()}});
