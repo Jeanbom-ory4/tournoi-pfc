@@ -75,9 +75,18 @@ async function svResults(cfg) {
   const ideas = rows.filter((r) => r.i).sort((x, y) => y.t - x.t).map((r) => ({ i: r.i, t: r.t }));
   return { total: rows.length, n, avg: n ? Math.round(sum / n * 10) / 10 : null, dist, ideas };
 }
+// Lot du vainqueur de la finale : il choisit une seule fois entre « recevoir » et « offrir » ; seul l'organisateur voit le choix.
+const pzKey = (cfg) => 'pfc:prize:' + (cfg.tid || '');
+// Textes du lot : jamais présents dans la page, envoyés seulement au vainqueur de la finale (et à l'organisateur pour son résumé)
+const PZ_UI = {
+  intro: "Pour fêter ta victoire, l'organisateur est heureux de t'offrir une carte cadeau de 20 €.",
+  ask: '🎁 Que souhaites-tu faire de ton lot ?',
+  take: { label: '🛍️ Recevoir ma carte cadeau (20 €)', quote: '« Merci pour ce tournoi ! Je récupère mon lot. »', confirm: 'Confirmer : tu souhaites recevoir ta carte cadeau de 20 € ?\n\nTon choix sera définitif.', done: "✅ C'est noté : tu as choisi de recevoir ta carte cadeau (20 €).", sub: "L'organisateur te la remettra.", admin: '🛍️ souhaite <b>recevoir</b> la carte cadeau (20 €)' },
+  give: { label: '🤝 Offrir mon lot pour le prochain tournoi', quote: "« Je choisis d'offrir cette valeur pour enrichir la dotation du prochain vainqueur (cagnotte portée à 40 €) ! »", confirm: 'Confirmer : tu souhaites offrir ton lot pour le prochain tournoi (cagnotte portée à 40 €) ?\n\nTon choix sera définitif.', done: "✅ Merci pour ce beau geste ! Tu as choisi d'offrir ton lot.", sub: 'La cagnotte du prochain tournoi sera portée à 40 €.', admin: '🤝 <b>offre</b> son lot : cagnotte du prochain tournoi portée à 40 €' },
+};
 async function wipe() {
   const cfg = await redis.get('pfc:cfg');
-  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), redis.del(svKey(cfg))]);   // matchs, présence et sondage
+  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), redis.del(svKey(cfg)), redis.del(pzKey(cfg))]);   // matchs, présence et sondage
   await redis.del('pfc:cfg', 'pfc:pins', 'pfc:emails'); // 'pfc:emails' : nettoyage d'anciennes données
 }
 // Termine un match : désigne le vainqueur (ff = joueur éliminé pour dépassement de délai) et le fait avancer
@@ -192,6 +201,19 @@ module.exports = async (req, res) => {
       if (sc === null && !idea) return res.status(400).json({ error: 'vide' });
       await redis.hset(svKey(cfg), { [f]: { s: sc, i: idea, t: Date.now() } });
       return res.json({ ok: 1 });
+    }
+
+    if (a === 'prizeget' || a === 'prize') {   // lot du vainqueur de la finale (jeton obligatoire)
+      const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || '');
+      if (!me || !cfg.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
+      const st = await load(), fin = st.matches[mk(cfg.rounds - 1, 0)];
+      if (!fin || fin.w !== me) return res.status(409).json({ error: 'notchampion' });
+      const cur = await redis.get(pzKey(cfg));
+      if (a === 'prizeget') return res.json({ choice: cur ? cur.choice : null, ui: PZ_UI });
+      if (cur) return res.json({ choice: cur.choice, already: 1 });   // choix définitif
+      if (!['take', 'give'].includes(b.choice)) return res.status(400).json({ error: 'choix' });
+      await redis.set(pzKey(cfg), { by: me, choice: b.choice, t: Date.now() });
+      return res.json({ choice: b.choice });
     }
 
     if (a === 'play') {
@@ -311,7 +333,7 @@ module.exports = async (req, res) => {
       if (a === 'admin') {
         const cfg = await redis.get('pfc:cfg'), locks = {};
         if (cfg) for (const p of cfg.players) { const st = await redis.get(lockKey(cfg, p.id)); if (st && st.until > Date.now()) locks[p.id] = st.until; }
-        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, survey: cfg ? await svResults(cfg) : null });
+        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, survey: cfg ? await svResults(cfg) : null, prize: cfg ? await (async () => { const p = await redis.get(pzKey(cfg)); return p ? { ...p, label: PZ_UI[p.choice] ? PZ_UI[p.choice].admin : '' } : null; })() : null });
       }
       if (a === 'reset') { await wipe(); return res.json({ ok: 1 }); }
 
