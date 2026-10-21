@@ -210,7 +210,7 @@ function jeuView0(){
   const m=myMatch();
   if(!m){
     const fin=S.matches[mk(S.cfg.rounds-1,0)];
-    if(fin&&fin.w===id)return wrap(head+'<p class="text-center text-3xl font-black">🏆 Champion !</p><p class="text-center mt-2">Bravo, tu remportes le tournoi !</p><p class="text-center italic mt-4 text-lg leading-relaxed">« La pierre apprend la solidité, la feuille la souplesse, le ciseau la précision. Le sage, lui, sait quand utiliser chacune. »</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>');
+    if(fin&&fin.w===id)return champView(head);
     const ffm=Object.values(S.matches).find(x=>x.ff===id);
     if(ffm&&ffm.ab===id&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">🏳️ Tu as abandonné le tournoi.</p><p class="text-center mt-2 text-sm">Ton adversaire passe au tour suivant. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé ! 😊</p>'+quoteP(Q_SEED));
     if(ffm&&ffm.r<S.cfg.rounds-1)return wrap(head+'<p class="text-center font-bold">⏱ Délai dépassé : tu as été éliminé(e).</p><p class="text-center mt-2 text-sm">Tu n\'as pas joué dans les '+S.cfg.hours+' h. Suis la suite dans l\'onglet Tableau.</p><p class="text-center mt-3">Merci d\'avoir participé !</p>'+quoteP(Q_SEED));
@@ -289,6 +289,13 @@ async function svSend(){
   catch(e){sv.err=e.status===401?'Ta connexion n\'est plus valide : reconnecte-toi.':'Envoi impossible, réessaie.'}
   sv.busy=false;lastSig='';render();
 }
+
+function pzAdmin(){
+  const fin=S.cfg&&S.matches[mk(S.cfg.rounds-1,0)];if(!fin||!fin.w)return '';
+  const p=adm&&adm.prize,nm=pn(fin.w);
+  const t=!p?'⏳ n\'a pas encore choisi':(p.label||'a fait son choix');
+  return wrap(`<p class="font-bold mb-2">🎁 Lot du vainqueur</p><p class="text-sm">🏆 ${nm} ${t}</p>${p?`<p class="text-xs opacity-80 mt-1">Choix enregistré le ${new Date(p.t).toLocaleString('fr-FR',{timeZone:'Europe/Paris',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</p>`:''}`);
+}
 function svAdmin(){
   const r=adm&&adm.survey;if(!r)return '';
   const tot=Math.max(1,r.n);   // pourcentages calculés sur le nombre total de notes reçues
@@ -303,6 +310,39 @@ async function svCopy(){
     try{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove()}catch(e2){}
   }
   svOk=ok?'ok':'ko';render();clearTimeout(svTimer);svTimer=setTimeout(()=>{svOk='';render()},2000);
+}
+
+// ---- Carte du champion : choix du lot ----
+let pz={st:'idle',choice:null,busy:false,err:'',ui:null};
+async function pzLoad(){
+  pz.st='loading';
+  try{const j=await api('prizeget');pz.choice=j.choice||null;pz.ui=j.ui||null;pz.st='ready'}
+  catch(e){pz.st=e.status===401?'idle':'ready'}
+  lastSig='';render();
+}
+// Tous les textes du lot viennent du serveur (jamais écrits dans cette page) : ils ne sont envoyés qu'au vainqueur de la finale
+function champView(head){
+  if(pz.st==='idle')pzLoad();
+  const u=pz.ui;
+  const top=`<p class="text-center text-2xl font-black leading-snug">🏆 FÉLICITATIONS AU GRAND MAÎTRE ! 🏆</p><p class="text-center italic mt-4 text-lg leading-relaxed">« La pierre apprend la solidité, la feuille la souplesse, le ciseau la précision. Le sage, lui, sait quand utiliser chacune. »</p><button onclick="confetti()" class="w-full mt-4 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">🎉 Relancer les confettis</button>
+  <p class="text-center font-bold mt-5">Tu as remporté la finale de Master Chifoumi !</p>${u?`<p class="text-center mt-2">${esc(u.intro)}</p>`:''}`;
+  let low='';
+  if(pz.st==='ready'&&u){
+    const ok=pz.choice&&u[pz.choice];
+    if(ok)low=`<div class="mt-4 p-3 rounded-2xl text-center font-bold" style="background:#d6efe0;color:#1d4d35">${esc(ok.done)}<div class="text-sm font-semibold mt-1">${esc(ok.sub)}</div></div>`;
+    else low=`<p class="text-center font-black text-lg mt-5">${esc(u.ask)}</p>
+    <button ${pz.busy?'disabled':''} onclick="pzPick('take')" class="w-full mt-3 py-4 px-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black text-lg active:scale-95 transition">${esc(u.take.label)}<span class="block text-sm font-semibold italic mt-1">${esc(u.take.quote)}</span></button>
+    <button ${pz.busy?'disabled':''} onclick="pzPick('give')" class="w-full mt-3 py-4 px-3 rounded-2xl card border border-white/40 font-black text-lg active:scale-95 transition">${esc(u.give.label)}<span class="block text-sm font-semibold italic mt-1">${esc(u.give.quote)}</span></button>
+    <p class="text-center text-sm min-h-[1.25rem] mt-2 text-yellow-200">${esc(pz.err)}</p>`;
+  }
+  return wrap(head+top+low);
+}
+async function pzPick(ch){
+  if(!pz.ui||!pz.ui[ch]||!confirm(pz.ui[ch].confirm))return;
+  pz.busy=true;pz.err='';lastSig='';render();
+  try{const j=await api('prize',{choice:ch});pz.choice=j.choice}
+  catch(e){pz.err=e.status===401?'Ta connexion n\'est plus valide : reconnecte-toi.':'Envoi impossible, réessaie.'}
+  pz.busy=false;lastSig='';render();
 }
 function loginView(){
   if(!lg.id)return wrap(`<p class="font-bold text-center mb-3">Qui es-tu ?</p><div class="grid grid-cols-2 gap-2">${[...S.cfg.players].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'})).map(p=>`<button onclick="lg={id:'${p.id}',pin:'',err:false};render()" class="card py-3 px-2 font-bold flex items-center justify-center text-center leading-tight break-words min-h-[3.5rem]">${(()=>{const k=p.name.indexOf("(");return k>0?`<span><span class="block">${esc(p.name.slice(0,k).trim())}</span><span class="block text-xs font-semibold opacity-80 mt-0.5">${esc(p.name.slice(k).trim())}</span></span>`:`<span>${esc(p.name)}</span>`})()}</button>`).join('')}</div>`);
@@ -324,7 +364,7 @@ async function pinIn(el){
   }
   render();
 }
-function logout(){sv={st:'idle',s:null,i:'',done:false,open:false,busy:false,err:''};tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
+function logout(){pz={st:'idle',choice:null,busy:false,err:'',ui:null};sv={st:'idle',s:null,i:'',done:false,open:false,busy:false,err:''};tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
 async function quitT(id){
   if(busy)return;
   if(!confirm('Veux-tu vraiment abandonner le tournoi ?\n\nTu seras éliminé(e) et ton adversaire passera directement au tour suivant. Cette action est définitive.'))return;
@@ -753,6 +793,7 @@ function adminView(){
     const head=`<div>${m.id==='third'?'🥉 ':m.r===S.cfg.rounds-1?'🏆 ':''}${pn(m.a)} ${m.sa}-${m.sb} ${pn(m.b)}</div>`;
     if(m.pend){const w=m.pend.by==='a'?m.b:m.a;return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">${pn(w)} doit jouer · reste <b data-cd="${m.due}">${cd(m.due-now())}</b></div><div class="flex gap-2 mt-1">${bt('+24 h',`adm2('extend','${k}')`,'extend:'+k,'+24 h ajoutées')}${bt('Éliminer '+pn(w),`adm2('forfeit','${k}','${w}')`,'forfeit:'+k+':'+w,'Éliminé(e)')}</div></div>`}
     return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`,'forfeit:'+k+':'+m.a,'Éliminé(e)')}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`,'forfeit:'+k+':'+m.b,'Éliminé(e)')}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
+  h+=pzAdmin();
   h+=svAdmin();
   h+=wrap(`<button onclick="resetT()" class="w-full py-3 rounded-2xl ${confirmReset?'bg-rose-600':'card'} font-bold">${confirmReset?'Confirmer : tout supprimer':'Réinitialiser le tournoi'}</button><button onclick="adminKey='';ls.del('pfc_ak');adm=null;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Quitter l'espace organisateur</button>`);
   return h;
