@@ -747,11 +747,11 @@ function adminView(){
   let h=startCard()+wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
   if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}${S.cfg.started===false?` <button onclick="renameP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Modifier</button><button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
   const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
-  const bt=(l,c)=>`<button onclick="${c}" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">${l}</button>`;
+  const bt=(l,c,key,okTxt)=>{const st=admSt.key===key?admSt.s:'';return `<button ${st?'disabled':''} onclick="${c}" class="px-2 py-1 rounded-lg text-xs font-bold active:scale-95 transition ${st==='ok'?'':'bg-white/20'}" ${st==='ok'?'style="background:#d6efe0;color:#1d4d35"':st==='busy'?'style="opacity:.6"':''}>${st==='ok'?'✓ '+okTxt:st==='busy'?'…':l}</button>`};
   h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
     const head=`<div>${m.id==='third'?'🥉 ':m.r===S.cfg.rounds-1?'🏆 ':''}${pn(m.a)} ${m.sa}-${m.sb} ${pn(m.b)}</div>`;
-    if(m.pend){const w=m.pend.by==='a'?m.b:m.a;return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">${pn(w)} doit jouer · reste <b data-cd="${m.due}">${cd(m.due-now())}</b></div><div class="flex gap-2 mt-1">${bt('+24 h',`adm2('extend','${k}')`)}${bt('Éliminer '+pn(w),`adm2('forfeit','${k}','${w}')`)}</div></div>`}
-    return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`)}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`)}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
+    if(m.pend){const w=m.pend.by==='a'?m.b:m.a;return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">${pn(w)} doit jouer · reste <b data-cd="${m.due}">${cd(m.due-now())}</b></div><div class="flex gap-2 mt-1">${bt('+24 h',`adm2('extend','${k}')`,'extend:'+k,'+24 h ajoutées')}${bt('Éliminer '+pn(w),`adm2('forfeit','${k}','${w}')`,'forfeit:'+k+':'+w,'Éliminé(e)')}</div></div>`}
+    return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`,'forfeit:'+k+':'+m.a,'Éliminé(e)')}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`,'forfeit:'+k+':'+m.b,'Éliminé(e)')}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
   h+=svAdmin();
   h+=wrap(`<button onclick="resetT()" class="w-full py-3 rounded-2xl ${confirmReset?'bg-rose-600':'card'} font-bold">${confirmReset?'Confirmer : tout supprimer':'Réinitialiser le tournoi'}</button><button onclick="adminKey='';ls.del('pfc_ak');adm=null;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Quitter l'espace organisateur</button>`);
   return h;
@@ -796,9 +796,17 @@ async function unlock(id){
   try{await api('unlock',{id});adm=await api('admin')}catch(e){alert('Erreur : '+e.message)}
   lastSig='';render();
 }
+let admSt={key:'',s:''},admTimer=null;
 async function adm2(a,id,loser){
   if(a==='forfeit'&&!confirm('Confirmer l\'élimination ? Cette action est définitive.'))return;
-  try{await api(a,{id,loser});S=await loadState()}catch(e){alert('Erreur : '+e.message)}
+  const key=a+':'+id+(loser?':'+loser:'');
+  clearTimeout(admTimer);admSt={key,s:'busy'};lastSig='';render();
+  try{
+    await api(a,{id,loser});
+    admSt={key,s:'ok'};lastSig='';
+    if(a==='forfeit'){render();await new Promise(r=>setTimeout(r,1100));S=await loadState();admSt={key:'',s:''}}   // le match disparaît de la liste : on laisse voir le « ✓ » une seconde
+    else{S=await loadState();render();admTimer=setTimeout(()=>{admSt={key:'',s:''};lastSig='';render()},2000);return}
+  }catch(e){admSt={key:'',s:''};alert('Erreur : '+e.message)}
   lastSig='';render();
 }
 async function adminLogin(){
