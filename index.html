@@ -290,8 +290,8 @@ async function svSend(){
 }
 function svAdmin(){
   const r=adm&&adm.survey;if(!r)return '';
-  const mx=Math.max(1,...r.dist);
-  const bars=r.dist.map((c,k)=>[c,k]).reverse().map(([c,k])=>`<div class="flex items-center gap-2 text-sm"><span class="w-6 text-right font-bold">${k+1}</span><div class="flex-1 h-3 rounded bg-white/15"><div class="h-3 rounded bg-yellow-300" style="width:${c/mx*100}%"></div></div><span class="w-6">${c}</span></div>`).join('');
+  const tot=Math.max(1,r.n);   // pourcentages calculés sur le nombre total de notes reçues
+  const bars=r.dist.map((c,k)=>[c,k]).reverse().map(([c,k])=>`<div class="flex items-center gap-2 text-sm"><span class="w-6 text-right font-bold">${k+1}</span><div class="flex-1 h-3 rounded bg-white/15"><div class="h-3 rounded bg-yellow-300" style="width:${c/tot*100}%"></div></div><span class="text-right" style="min-width:5rem">${c} · ${Math.round(c/tot*100)}\u00a0%</span></div>`).join('');
   return wrap(`<p class="font-bold mb-2">📊 Sondage (anonyme)</p><p class="text-sm mb-2">${r.total} réponse${r.total>1?'s':''}${r.n?` · note moyenne : <b>${String(r.avg).replace('.',',')} / 10</b> (${r.n} note${r.n>1?'s':''})`:''}</p>${r.n?`<div class="space-y-1 mb-3">${bars}</div>`:''}
   <p class="font-bold text-sm mb-1">💡 Idées de jeux (${r.ideas.length})</p>${r.ideas.length?`<ul class="text-sm space-y-1">${r.ideas.map(x=>`<li class="rounded-lg bg-white/10 px-2 py-1">${esc(x.i)}</li>`).join('')}</ul><button onclick="svCopy()" class="mt-2 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition ${svOk==='ok'?'':svOk==='ko'?'bg-rose-500 text-white':'card'}" ${svOk==='ok'?'style="background:#d6efe0;color:#1d4d35"':''}>${svOk==='ok'?'✓ Copié !':svOk==='ko'?'Copie impossible':'Copier les idées'}</button>`:'<p class="text-sm opacity-80">Aucune idée pour le moment.</p>'}`);
 }
