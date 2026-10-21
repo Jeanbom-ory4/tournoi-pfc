@@ -24,6 +24,7 @@ button{touch-action:manipulation}
 .mp-slot{display:inline-flex;align-items:center;justify-content:center;width:.66em;flex:none}
 .mp-bolt{display:inline-flex}
 .mp-bolt svg{width:.6em;height:.6em;filter:drop-shadow(0 0 .12em rgba(251,191,36,.6))}
+.mp-mini svg{width:1.05em;height:1.05em;margin-right:.15em}
 .mp-note{margin-top:.15rem;font-size:.8rem;font-weight:600;color:#ffe9b0;opacity:.92;text-align:center}
 .mp-in{animation:mpf .5s ease-out both}
 @keyframes mpf{from{opacity:0}to{opacity:1}}
@@ -717,7 +718,7 @@ function bracketView(){
   const R=S.cfg.rounds,fin=S.matches[mk(R-1,0)],th=S.matches.third,id=me(),pw=x=>x&&x!=='none'?pn(x):'—';
   const CW=152,SLOT=80,CARD=64,LAB=56;
   const card=m=>{
-    const row=(pid,s)=>`<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid&&m.a&&m.b&&!m.w?pdot(pid):''}${pid?pn(pid)+(m.ff===pid?(m.ab===pid?' 🏳️':' ⏱'):''):'À définir'}</span><span>${s}</span></div>`;
+    const row=(pid,s)=>{const mpOnCard=pid&&mpOf(m)[pid===m.a?'a':'b']?`<span ${mpAttr('t|'+(m.id||mk(m.r,m.i))+'|'+(pid===m.a?'a':'b'),'mp-bolt mp-mini')}>${BOLT}</span>`:'';return `<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid&&m.a&&m.b&&!m.w?pdot(pid):''}${pid?pn(pid)+(m.ff===pid?(m.ab===pid?' 🏳️':' ⏱'):''):'À définir'}</span><span class="inline-flex items-center">${mpOnCard}${s}</span></div>`};
     const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
     return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:${CARD}px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
   };
