@@ -153,6 +153,7 @@ setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.
 // Déconnecte automatiquement si le tournoi a été réinitialisé (jeton d'un ancien tournoi)
 function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
 async function refresh(){
+  if(tab==='apropos'&&loaded)return;   // « À propos » : contenu fixe, aucun rafraîchissement ni signal de présence (économie de requêtes)
   const f=document.activeElement;
   if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.type!=='checkbox'&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
   try{S=await loadState();loadErr=null}catch(e){loadErr=e.message+(e.status?' (HTTP '+e.status+')':'')}
@@ -191,7 +192,7 @@ function render(){
   winCheck();
   champCheck();
 }
-function setTab(t){tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render()}
+function setTab(t){const was=tab;tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
 
 /* ---------- Joueur ---------- */
 function myMatch(){
