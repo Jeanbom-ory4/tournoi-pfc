@@ -18,6 +18,15 @@ button{touch-action:manipulation}
 @keyframes tdb{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.15;transform:scale(.75)}}
 .tdot{display:inline-block;animation:tdb 1.2s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.tdot{animation:none}}
+/* Balle de match : éclair doré qui apparaît en fondu (0,5 s) à côté du score du joueur qui peut gagner d'un point */
+.mp-row{display:flex;align-items:center;justify-content:center}
+.mp-slot{display:inline-flex;align-items:center;justify-content:center;width:.66em;flex:none}
+.mp-bolt{display:inline-flex}
+.mp-bolt svg{width:.6em;height:.6em;filter:drop-shadow(0 0 .12em rgba(251,191,36,.6))}
+.mp-note{margin-top:.15rem;font-size:.8rem;font-weight:600;color:#ffe9b0;opacity:.92;text-align:center}
+.mp-in{animation:mpf .5s ease-out both}
+@keyframes mpf{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.mp-in{animation:none}}
 .pdot{display:inline-block;width:.62rem;height:.62rem;border-radius:50%;border:1.5px solid rgba(255,255,255,.6);margin-right:.35rem;vertical-align:middle;flex:none;box-sizing:border-box}
 .pdot.on{border-color:#a7f3d0;background:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.30),0 0 8px rgba(52,211,153,.9);animation:pdp 2.4s ease-in-out infinite}
 @keyframes pdp{50%{box-shadow:0 0 0 4px rgba(52,211,153,.12),0 0 12px rgba(52,211,153,1)}}
@@ -208,6 +217,26 @@ function myMatch(){
   const id=me();
   return Object.entries(S.matches).map(([k,m])=>({id:k,...m})).filter(m=>(m.a===id||m.b===id)&&m.a&&m.b).sort((x,y)=>x.r-y.r).find(m=>!m.w)||null;
 }
+
+// ---- Balle de match : un joueur est à un point de la victoire ----
+const BOLT='<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde9a0"/><stop offset="1" stop-color="#f4a62a"/></linearGradient></defs><path d="M13.5 1.5 4.5 13.5h6.2L9.3 22.5l10.2-13h-6.4z" fill="url(#bg)" stroke="#fff3c4" stroke-width=".6" stroke-linejoin="round"/></svg>';
+const mpSeen=new Map();   // clé -> instant de première apparition (le fondu ne se rejoue pas à chaque redessin)
+function mpAttr(key,base){
+  const t=Date.now();if(!mpSeen.has(key))mpSeen.set(key,t);
+  const el=t-mpSeen.get(key);
+  return el<500?`class="${base} mp-in" style="animation-delay:-${el}ms"`:`class="${base}"`;
+}
+function mpOf(m){const n=m.need||3;if(m.w||!m.a||!m.b||n<2)return{a:false,b:false};return{a:m.sa===n-1,b:m.sb===n-1}}
+const mpName=id=>{const h=raw(id),k=h.indexOf('(');return esc((k>0?h.slice(0,k):h).trim())};
+function mpScore(txt,cls,L,R,key){
+  const slot=(on,s)=>`<span class="mp-slot">${on?`<span ${mpAttr(key+s,'mp-bolt')}>${BOLT}</span>`:''}</span>`;
+  return `<div class="mp-row ${cls}">${slot(L,'L')}<span>${txt}</span>${slot(R,'R')}</div>`;
+}
+function mpNote(m,key,self){   // self : page « Jouer » — le joueur lit « toi » pour lui-même
+  const f=mpOf(m),nm=id=>self&&id===me()?'toi':mpName(id),n=[f.a&&nm(m.a),f.b&&nm(m.b)].filter(Boolean).sort((x,y)=>(y==='toi')-(x==='toi'));
+  if(!n.length)return '';
+  return `<div ${mpAttr(key+'|'+(f.a?1:0)+(f.b?1:0),'mp-note')}>⚡ Balle de match pour ${n.join(' et ')}</div>`;
+}
 function jeuView(){const h=jeuView0();return h+(svEligible()?svCard():'')}
 function jeuView0(){
   if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
@@ -236,7 +265,8 @@ function jeuView0(){
   }
   const side=m.a===id?'a':'b',o=side==='a'?'b':'a',opp=m[o],mine=m['s'+side],theirs=m['s'+o];
   const locked=m.pend&&m.pend.by===side;
-  const score=`<div class="text-center"><div class="text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div><div class="text-5xl font-black my-2">${mine} - ${theirs}</div><div class="font-semibold">Toi vs ${pn(opp)}</div><div class="text-sm mt-1 opacity-95">${presTxt(opp)}</div></div>`;
+  const mpf=mpOf(m);
+  const score=`<div class="text-center"><div class="text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div><div class="my-2">${mpScore(`${mine} - ${theirs}`,"text-5xl font-black",mpf[side],mpf[o],"j|"+m.id+"|")}</div>${mpNote(m,"jn|"+m.id,true)}<div class="font-semibold mt-1">Toi vs ${pn(opp)}</div><div class="text-sm mt-1 opacity-95">${presTxt(opp)}</div></div>`;
   let status,act='';
   if(locked)status=`<div class="mt-4 p-3 rounded-2xl bg-yellow-400 text-yellow-950 font-bold text-center">🔒 Coup verrouillé. En attente du coup de ${pn(opp)}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ ${pn(opp)} doit jouer avant d'être éliminé(e) : reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`;
   else{
@@ -739,7 +769,7 @@ function matchView(k){
     :`<div class="mt-3 p-3 rounded-2xl card text-center">${m.a&&m.b?'Prochain tour à jouer…':'Match pas encore défini'}</div>`;
   const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>{const g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr ${x.w==='='?'tt':x.w==='a'?'wa':'wb'}"><span class="hn">${i+1}.</span><span class="c">${g(x.a)}</span><i>vs</i><span class="c">${g(x.b)}</span></div>`}).join('')}</div>`:'';
   return back+wrap(`<div class="text-center text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div>
-    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-4xl font-black text-center" style="min-width:5.5rem">${m.sa} - ${m.sb}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${st}
+    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-center" style="min-width:5.5rem">${mpScore(`${m.sa} - ${m.sb}`,"text-4xl font-black",mpOf(m).a,mpOf(m).b,"s|"+m.id+"|")}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${mpNote(m,'sn|'+m.id)}${st}
     ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
     <p class="text-xs text-center mt-3 opacity-70">👁 Mode spectateur : un coup en attente reste secret tant que les deux joueurs n'ont pas joué.</p>`);
 }
