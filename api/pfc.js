@@ -203,6 +203,14 @@ module.exports = async (req, res) => {
       return res.json({ ok: 1 });
     }
 
+    if (a === 'hb') {   // simple signal de présence (rubrique « À propos ») : 1 seule commande, sans lire le tournoi
+      const [hid0, tid0] = String(b.token || '').split('.');
+      if (!hid0 || sign(hid0, tid0 || '') !== b.token) return res.status(401).json({ error: 'auth' });
+      const k = 'pfc:seen:' + (tid0 || '') + ':' + hid0;
+      if (b.hid) await redis.del(k); else await redis.set(k, 1, { ex: 90 });
+      return res.json({ ok: 1 });
+    }
+
     if (a === 'prizeget' || a === 'prize') {   // lot du vainqueur de la finale (jeton obligatoire)
       const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || '');
       if (!me || !cfg.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
