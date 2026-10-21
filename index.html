@@ -185,6 +185,11 @@ refresh();
 function render(){
   const app=$('#app'),hadFocus=document.activeElement&&document.activeElement.id==='pin';
   if(!loaded){app.innerHTML=wrap('<p class="text-center">Chargement…</p>');return}
+  // Le vainqueur de la finale est ramené une seule fois sur « Jouer » : félicitations, lot et sondage s'y trouvent (pas depuis « Orga » : on ne le dérange pas)
+  if(S.cfg&&tok&&tab!=='admin'){
+    const cid=me(),cf=S.matches[mk(S.cfg.rounds-1,0)],ck='pfc_cgo_'+(S.cfg.tid||'')+'_'+cid;
+    if(cid&&cf&&cf.w===cid&&ls.get(ck)!=='1'){ls.set(ck,'1');if(tab!=='jeu'){tab='jeu';watch=null;bigBoard=false;window.scrollTo(0,0)}}
+  }
   const tabs=[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
