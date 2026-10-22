@@ -265,12 +265,16 @@ function mpNote(m,key,self){   // self : page « Jouer » — le joueur lit « t
   return `<div ${mpAttr(key+'|'+(f.a?1:0)+(f.b?1:0),'mp-note')}>⚡ Balle de match pour ${n.join(' et ')}</div>`;
 }
 let avOpen=false,avBusy=false;
-let avTab='smileys_emotion';
+let avTab='smileys_emotion',avList=null,avLoaded=false;   // avList : liste autorisée par l'organisateur (null = toute la liste)
+let avFetch=false;
+async function avLoad(force){if(avFetch||(avLoaded&&!force))return;avFetch=true;try{const j=await api('avlist');avList=j.list;avLoaded=true;lastSig='';render()}catch(e){}avFetch=false}
+const avOk=e=>!avList||avList.includes(e);
+const avTabs=()=>Object.keys(AVG).filter(k=>AVG[k].some(avOk));
 function avCard(){
   const p=S.cfg&&S.cfg.players.find(x=>x.id===me());if(!p)return '';
   const cur=p.av||'';
-  const tabs=Object.keys(AVG).map(k=>`<button onclick="avTab='${k}';lastSig='';render()" aria-label="${AVT[k][1]}" title="${AVT[k][1]}" class="px-2 py-1 rounded-lg text-xl ${k===avTab?'bg-white/35':'bg-white/10'}">${AVT[k][0]}</button>`).join('');
-  return `<div class="card p-3 mt-3 text-center"><div class="flex items-center justify-center gap-3"><span class="text-sm opacity-90">Mon avatar : <b class="text-xl align-middle">${cur||'—'}</b></span><button onclick="avOpen=!avOpen;lastSig='';render()" class="px-3 py-1 rounded-xl bg-white/20 text-sm font-bold">${avOpen?'Fermer':cur?'Changer':'Choisir'}</button></div>${avOpen?`<div class="flex flex-wrap justify-center gap-1 mt-3">${tabs}</div><div class="grid grid-cols-6 gap-2 mt-3" style="max-height:15rem;overflow-y:auto">${AVG[avTab].map(e=>`<button ${avBusy?'disabled':''} onclick="avSet('${e}')" class="py-2 rounded-xl text-2xl ${e===cur?'bg-yellow-300/70':'bg-white/15'}">${e}</button>`).join('')}</div>${cur?`<button ${avBusy?'disabled':''} onclick="avSet('')" class="mt-3 text-sm underline opacity-90">Retirer mon avatar</button>`:''}`:''}</div>`;
+  const ks=avTabs(),tk=ks.includes(avTab)?avTab:ks[0],tabs=ks.map(k=>`<button onclick="avTab='${k}';lastSig='';render()" aria-label="${AVT[k][1]}" title="${AVT[k][1]}" class="px-2 py-1 rounded-lg text-xl ${k===tk?'bg-white/35':'bg-white/10'}">${AVT[k][0]}</button>`).join('');
+  return `<div class="card p-3 mt-3 text-center"><div class="flex items-center justify-center gap-3"><span class="text-sm opacity-90">Mon avatar : <b class="text-xl align-middle">${cur||'—'}</b></span><button onclick="avOpen=!avOpen;if(avOpen)avLoad(true);lastSig='';render()" class="px-3 py-1 rounded-xl bg-white/20 text-sm font-bold">${avOpen?'Fermer':cur?'Changer':'Choisir'}</button></div>${avOpen?`<div class="flex flex-wrap justify-center gap-1 mt-3">${tabs}</div><div class="grid grid-cols-6 gap-2 mt-3" style="max-height:15rem;overflow-y:auto">${(AVG[tk]||[]).filter(avOk).map(e=>`<button ${avBusy?'disabled':''} onclick="avSet('${e}')" class="py-2 rounded-xl text-2xl ${e===cur?'bg-yellow-300/70':'bg-white/15'}">${e}</button>`).join('')}</div>${cur?`<button ${avBusy?'disabled':''} onclick="avSet('')" class="mt-3 text-sm underline opacity-90">Retirer mon avatar</button>`:''}`:''}</div>`;
 }
 async function avSet(e){
   if(avBusy)return;avBusy=true;lastSig='';render();
@@ -874,8 +878,30 @@ function adminView(){
     return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`,'forfeit:'+k+':'+m.a,'Éliminé(e)')}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`,'forfeit:'+k+':'+m.b,'Éliminé(e)')}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
   h+=pzAdmin();
   h+=svAdmin();
+  h+=avAdmin();
   h+=wrap(`<button onclick="resetT()" class="w-full py-3 rounded-2xl ${confirmReset?'bg-rose-600':'card'} font-bold">${confirmReset?'Confirmer : tout supprimer':'Réinitialiser le tournoi'}</button><button onclick="adminKey='';ls.del('pfc_ak');adm=null;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Quitter l'espace organisateur</button>`);
   return h;
+}
+let avAd={open:false,draft:null,tab:'smileys_emotion',busy:false,msg:''};
+const AVALL=Object.values(AVG).flat();
+function avAdmin(){
+  if(!avLoaded)avLoad();
+  const n=avList?avList.length:AVALL.length;
+  if(!avAd.open)return wrap(`<p class="font-bold mb-1">Avatars proposés aux joueurs</p><p class="text-sm opacity-90">${avLoaded?`${n} sur ${AVALL.length} émoticônes proposées${avList?'':' (toute la liste)'}.`:'Chargement…'}</p>${avAd.msg?`<p class="text-sm mt-1" style="color:#d6efe0">${avAd.msg}</p>`:''}<button onclick="avEdit()" class="w-full mt-3 py-3 rounded-2xl card font-bold">Choisir les avatars à garder</button>`);
+  const d=avAd.draft,tabs=Object.keys(AVG).map(k=>`<button onclick="avAd.tab='${k}';lastSig='';render()" title="${AVT[k][1]}" class="px-2 py-1 rounded-lg text-xl ${k===avAd.tab?'bg-white/35':'bg-white/10'}">${AVT[k][0]}</button>`).join('');
+  const cnt=k=>AVG[k].filter(e=>d.has(e)).length;
+  return wrap(`<p class="font-bold mb-1">Avatars proposés aux joueurs</p><p class="text-sm opacity-90 mb-2">Touche un emoji pour le garder (opaque) ou le retirer (grisé).</p><div class="flex flex-wrap justify-center gap-1">${tabs}</div><p class="text-sm text-center mt-2"><b>${AVT[avAd.tab][1]}</b> : <span id="avc">${cnt(avAd.tab)}</span> / ${AVG[avAd.tab].length} gardés · total <span id="avt">${d.size}</span></p><div class="flex flex-wrap justify-center gap-2 mt-2"><button onclick="avAll(true,false)" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">Tout garder (onglet)</button><button onclick="avAll(false,false)" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">Tout retirer (onglet)</button><button onclick="avAll(false,true)" class="px-2 py-1 rounded-lg bg-white/20 text-xs font-bold">Tout retirer partout</button></div><div class="grid grid-cols-6 gap-2 mt-3" style="max-height:18rem;overflow-y:auto">${AVG[avAd.tab].map(e=>`<button onclick="avTog(this,'${e}')" class="py-2 rounded-xl text-2xl bg-white/15" style="opacity:${d.has(e)?1:.22}">${e}</button>`).join('')}</div><div class="flex gap-2 mt-3"><button ${avAd.busy?'disabled':''} onclick="avSave()" class="flex-1 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">${avAd.busy?'Enregistrement…':'Enregistrer'}</button><button onclick="avAd.open=false;lastSig='';render()" class="px-4 py-3 rounded-2xl card font-bold">Annuler</button></div><button onclick="avSave(true)" class="mt-3 text-xs underline opacity-80">Tout autoriser (remettre toute la liste)</button>`);
+}
+function avEdit(){avAd.draft=new Set(avList||AVALL);avAd.open=true;avAd.msg='';lastSig='';render()}
+function avTog(b,e){const d=avAd.draft;if(d.has(e)){d.delete(e);b.style.opacity='.22'}else{d.add(e);b.style.opacity='1'}const c=document.getElementById('avc'),t=document.getElementById('avt');if(c)c.textContent=AVG[avAd.tab].filter(x=>d.has(x)).length;if(t)t.textContent=d.size}
+function avAll(on,everywhere){const d=avAd.draft;for(const k of everywhere?Object.keys(AVG):[avAd.tab])for(const e of AVG[k])on?d.add(e):d.delete(e);lastSig='';render()}
+async function avSave(all){
+  if(!all&&!avAd.draft.size){alert('Garde au moins un emoji.');return}
+  if(all&&!confirm('Remettre toute la liste d\'émoticônes à disposition des joueurs ?'))return;
+  avAd.busy=true;lastSig='';render();
+  try{const j=await api('avset',{list:all?null:[...avAd.draft]});avList=j.list;avLoaded=true;avAd.open=false;avAd.msg='✅ Enregistré.'}
+  catch(e){alert('Erreur : '+(e.status===401?'clé organisateur invalide':e.message))}
+  avAd.busy=false;lastSig='';render();
 }
 function drawQR(){const el=$('#qr');if(!el||!window.QRCode)return;el.innerHTML='';try{new QRCode(el,{text:location.origin+location.pathname,width:200,height:200})}catch(e){}}
 async function renameP(id){
