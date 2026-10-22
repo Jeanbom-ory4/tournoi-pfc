@@ -141,6 +141,8 @@ async function api(action,extra){
 const me=()=>tok?tok.split('.')[0]:null;
 const pn=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?esc(p.name):null};
 const pn2=h=>{const k=h.indexOf('(');return k>0?`<span class="block">${h.slice(0,k).trim()}</span><span class="block text-xs font-semibold opacity-80 mt-0.5">${h.slice(k).trim()}</span>`:h};   // prénom sur la 1re ligne, mots entre parenthèses sur la 2e (h = nom déjà échappé)
+const AVL='🐶🐱🦊🐼🐸🦁🐵🐧🦄🐙⚽🏀🎾🏓🎯🎲🍕🍔🍩🍉🍒🚀💎🔥🌈⭐🎸🎧🎩🍀'.match(/\p{Extended_Pictographic}/gu);   // même liste fermée que sur le serveur
+const av=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p&&p.av?` <span class="flex-none" style="font-size:1.05em;line-height:1">${p.av}</span>`:''};
 const raw=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?p.name:'?'};
 const mk=(r,i)=>`m${r}_${i}`;
 // Tableau : tous les joueurs jouent dès le tour 1 ; si un tour compte un nombre impair de joueurs, l'un d'eux est « exempté » (il passe directement au tour suivant)
@@ -262,7 +264,18 @@ function mpNote(m,key,self){   // self : page « Jouer » — le joueur lit « t
   if(!n.length)return '';
   return `<div ${mpAttr(key+'|'+(f.a?1:0)+(f.b?1:0),'mp-note')}>⚡ Balle de match pour ${n.join(' et ')}</div>`;
 }
-function jeuView(){const h=jeuView0();return h+(svEligible()?svCard():'')}
+let avOpen=false,avBusy=false;
+function avCard(){
+  const p=S.cfg&&S.cfg.players.find(x=>x.id===me());if(!p)return '';
+  const cur=p.av||'';
+  return `<div class="card p-3 mt-3 text-center"><div class="flex items-center justify-center gap-3"><span class="text-sm opacity-90">Mon avatar : <b class="text-xl align-middle">${cur||'—'}</b></span><button onclick="avOpen=!avOpen;lastSig='';render()" class="px-3 py-1 rounded-xl bg-white/20 text-sm font-bold">${avOpen?'Fermer':cur?'Changer':'Choisir'}</button></div>${avOpen?`<div class="grid grid-cols-6 gap-2 mt-3">${AVL.map(e=>`<button ${avBusy?'disabled':''} onclick="avSet('${e}')" class="py-2 rounded-xl text-2xl ${e===cur?'bg-yellow-300/70':'bg-white/15'}">${e}</button>`).join('')}</div>${cur?`<button ${avBusy?'disabled':''} onclick="avSet('')" class="mt-3 text-sm underline opacity-90">Retirer mon avatar</button>`:''}`:''}</div>`;
+}
+async function avSet(e){
+  if(avBusy)return;avBusy=true;lastSig='';render();
+  try{await api('avatar',{av:e});S=await loadState();avOpen=false}catch(x){alert(x.status===401?'Ta connexion n\'est plus valide : reconnecte-toi.':'Enregistrement impossible, réessaie.')}
+  avBusy=false;lastSig='';render();
+}
+function jeuView(){const h=jeuView0();return h+(tok?avCard():'')+(svEligible()?svCard():'')}
 function jeuView0(){
   if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
   const id=me(),when=S.cfg.started===false&&S.cfg.startAt?fmtWhen(S.cfg.startAt):'';
@@ -741,13 +754,13 @@ function bracketView(){
   const R=S.cfg.rounds,fin=S.matches[mk(R-1,0)],th=S.matches.third,id=me(),pw=x=>x&&x!=='none'?pn(x):'—';
   const CW=152,SLOT=80,CARD=64,LAB=56;
   const card=m=>{
-    const row=(pid,s)=>{const mpOnCard=pid&&mpOf(m)[pid===m.a?'a':'b']?`<span ${mpAttr('t|'+(m.id||mk(m.r,m.i))+'|'+(pid===m.a?'a':'b'),'mp-bolt mp-mini')}>${BOLT}</span>`:'';return `<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="truncate">${pid&&m.a&&m.b&&!m.w?pdot(pid):''}${pid?pn(pid)+(m.ff===pid?(m.ab===pid?' 🏳️':' ⏱'):''):'À définir'}</span><span class="inline-flex items-center">${mpOnCard}${s}</span></div>`};
+    const row=(pid,s)=>{const mpOnCard=pid&&mpOf(m)[pid===m.a?'a':'b']?`<span ${mpAttr('t|'+(m.id||mk(m.r,m.i))+'|'+(pid===m.a?'a':'b'),'mp-bolt mp-mini')}>${BOLT}</span>`:'';return `<div class="flex justify-between gap-2 px-2 py-1 rounded ${m.w&&m.w===pid?'bg-emerald-500/40 font-bold':''} ${pid&&pid===id?'ring-1 ring-yellow-300':''}"><span class="flex items-center min-w-0"><span class="truncate">${pid&&m.a&&m.b&&!m.w?pdot(pid):''}${pid?pn(pid)+(m.ff===pid?(m.ab===pid?' 🏳️':' ⏱'):''):'À définir'}</span>${pid?av(pid):''}</span><span class="inline-flex items-center">${mpOnCard}${s}</span></div>`};
     const k=m.id||mk(m.r,m.i),open=m.a&&m.b;
     return `<div ${open?`role="button" tabindex="0" onclick="openMatch('${k}')"`:''} style="height:${CARD}px" class="card p-1 text-sm ${open?'cursor-pointer active:scale-95':''}">${row(m.a,m.sa)}${row(m.b,m.sb)}</div>`;
   };
-  const byeCard=m=>{const pid=m.w||m.a||m.b;return `<div style="height:${CARD}px" class="card p-1 text-sm flex flex-col justify-center"><div class="px-2 ${pid&&pid===id?'ring-1 ring-yellow-300 rounded':''}"><div class="truncate ${pid?'font-bold':''}">${pid?pn(pid):'À définir'}</div><div class="opacity-80" style="font-size:12px">Exempté(e)</div></div></div>`};
+  const byeCard=m=>{const pid=m.w||m.a||m.b;return `<div style="height:${CARD}px" class="card p-1 text-sm flex flex-col justify-center"><div class="px-2 ${pid&&pid===id?'ring-1 ring-yellow-300 rounded':''}"><div class="flex items-center min-w-0 ${pid?'font-bold':''}"><span class="truncate">${pid?pn(pid):'À définir'}</span>${pid?av(pid):''}</div><div class="opacity-80" style="font-size:12px">Exempté(e)</div></div></div>`};
   let out='';
-  if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
+  if(fin&&fin.w){const sec=fin.w===fin.a?fin.b:fin.a;out=`<div class="card p-3 mb-3 text-center pop"><div class="font-black text-xl">🏆 Champion : ${pn(fin.w)}${av(fin.w)}</div><div class="mt-2 text-sm">🥈 ${pn(sec)}${av(sec)}${th?' · 🥉 '+(th.w?pw(th.w):'petite finale en cours'):''}</div></div>`}
   // Positions verticales : un match du tour suivant est centré entre ses matchs précédents (les matchs « exemptés » n'ont pas de carte)
   const vis=(r,i)=>{const m=S.matches[mk(r,i)];return !!m};
   const Y=[Array.from({length:cntC(0)},(_,i)=>i*SLOT+SLOT/2)],F=[];
@@ -794,7 +807,7 @@ function matchView(k){
     :`<div class="mt-3 p-3 rounded-2xl card text-center">${m.a&&m.b?'Prochain tour à jouer…':'Match pas encore défini'}</div>`;
   const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>{const g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr ${x.w==='='?'tt':x.w==='a'?'wa':'wb'}"><span class="hn">${i+1}.</span><span class="c">${g(x.a)}</span><i>vs</i><span class="c">${g(x.b)}</span></div>`}).join('')}</div>`:'';
   return back+wrap(`<div class="text-center text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div>
-    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-center" style="min-width:5.5rem">${mpScore(`${m.sa} - ${m.sb}`,"text-4xl font-black",mpOf(m).a,mpOf(m).b,"s|"+m.id+"|")}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${mpNote(m,'sn|'+m.id)}${st}
+    <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A)}${m.a?av(m.a):''}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-center" style="min-width:5.5rem">${mpScore(`${m.sa} - ${m.sb}`,"text-4xl font-black",mpOf(m).a,mpOf(m).b,"s|"+m.id+"|")}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B)}${m.b?av(m.b):''}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${mpNote(m,'sn|'+m.id)}${st}
     ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
     <p class="text-xs text-center mt-3 opacity-70">👁 Mode spectateur : un coup en attente reste secret tant que les deux joueurs n'ont pas joué.</p>`);
 }
@@ -850,7 +863,7 @@ function adminView(){
     <textarea id="names" rows="8" class="w-full rounded-xl p-3 text-slate-900" placeholder="Alice&#10;Bruno&#10;Chloé&#10;David"></textarea>
     <button onclick="createT()" class="w-full mt-3 py-4 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Générer le tournoi 🚀</button>`);
   let h=startCard()+wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
-  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}${S.cfg.started===false?` <button onclick="renameP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Modifier</button><button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
+  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)}${p.av?` ${p.av} <button onclick="clrAv('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Retirer l'avatar</button>`:''}${S.cfg.started===false?` <button onclick="renameP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Modifier</button><button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
   const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
   const bt=(l,c,key,okTxt)=>{const st=admSt.key===key?admSt.s:'';return `<button ${st?'disabled':''} onclick="${c}" class="px-2 py-1 rounded-lg text-xs font-bold active:scale-95 transition ${st==='ok'?'':'bg-white/20'}" ${st==='ok'?'style="background:#d6efe0;color:#1d4d35"':st==='busy'?'style="opacity:.6"':''}>${st==='ok'?'✓ '+okTxt:st==='busy'?'…':l}</button>`};
   h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
@@ -871,6 +884,7 @@ async function renameP(id){
   catch(e){alert(e.message==='started'?'Le tournoi est déjà lancé : on ne peut plus modifier de nom.':e.message==='doublon'?'Ce nom existe déjà dans la liste.':e.message==='vide'?'Le nom ne peut pas être vide.':'Erreur : '+e.message)}
   lastSig='';render();
 }
+async function clrAv(id){if(!confirm('Retirer l\'avatar de ce joueur ?'))return;try{await api('clearavatar',{id});S=await loadState();adm=await api('admin');lastSig='';render()}catch(e){alert('Erreur : '+e.message)}}
 async function removeP(id){
   const p=S.cfg.players.find(x=>x.id===id);if(!p)return;
   if(S.cfg.players.length<=2){alert('Il faut garder au moins 2 joueurs.');return}
