@@ -197,7 +197,8 @@ document.body.appendChild(hintEl);
 let hintDone=false;
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
-  if(tab==='jeu'&&loaded&&window.scrollY>0&&rem<=70)hintDone=true; // arrivé en bas : disparaît jusqu'à la prochaine ouverture de l'appli (variable en mémoire, remise à zéro au rechargement)
+  if(tab!=='jeu')hintDone=false;                       // on a quitté Jouer : il pourra réapparaître au retour
+  else if(loaded&&window.scrollY>0&&rem<=70)hintDone=true; // arrivé en bas : il disparaît pour cette visite
   const on=tab==='jeu'&&loaded&&!hintDone&&rem>70&&!document.hidden;
   hintEl.style.opacity=on?'1':'0';hintEl.style.pointerEvents=on?'auto':'none';
 }
