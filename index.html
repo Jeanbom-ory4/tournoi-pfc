@@ -29,6 +29,11 @@ button{touch-action:manipulation}
 .mp-in{animation:mpf .5s ease-out both}
 @keyframes mpf{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.mp-in{animation:none}}
+/* Indicateur « il y a une suite en bas » (page Jouer) */
+#scrollHint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;gap:.4rem;padding:.5rem .95rem;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(20,10,35,.82);color:#fff;font-size:.85rem;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s ease}
+#scrollHint svg{width:1.1em;height:1.1em;animation:hnt 1.4s ease-in-out infinite}
+@keyframes hnt{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){#scrollHint svg{animation:none}}
 .pdot{display:inline-block;width:.62rem;height:.62rem;border-radius:50%;border:1.5px solid rgba(255,255,255,.6);margin-right:.35rem;vertical-align:middle;flex:none;box-sizing:border-box}
 .pdot.on{border-color:#a7f3d0;background:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.30),0 0 8px rgba(52,211,153,.9);animation:pdp 2.4s ease-in-out infinite}
 @keyframes pdp{50%{box-shadow:0 0 0 4px rgba(52,211,153,.12),0 0 12px rgba(52,211,153,1)}}
@@ -184,6 +189,18 @@ const idle=()=>Date.now()-lastAct>=IDLE_MS;
 const idleBar=document.createElement('div');idleBar.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);max-width:92vw;padding:.55rem .9rem;border-radius:999px;background:rgba(20,10,35,.88);color:#fff;font-size:.8rem;font-weight:700;text-align:center;z-index:50;display:none';idleBar.textContent='⏸ Actualisation en pause : touche l\'écran pour reprendre';document.body.appendChild(idleBar);
 function wake(){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none';lastPing=0;refresh()}}
 ['pointerdown','touchstart','keydown','scroll','mousemove'].forEach(e=>document.addEventListener(e,wake,{passive:true,capture:true}));
+// Indicateur de défilement : visible sur « Jouer » tant qu'il reste du contenu plus bas ; un toucher fait défiler
+const hintEl=document.createElement('button');hintEl.id='scrollHint';hintEl.type='button';hintEl.setAttribute('aria-label','Voir la suite de la page');
+hintEl.innerHTML='Voir la suite <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+hintEl.onclick=()=>window.scrollBy({top:Math.round(window.innerHeight*.8),behavior:'smooth'});
+document.body.appendChild(hintEl);
+function hintUpdate(){
+  const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight),on=tab==='jeu'&&loaded&&rem>70&&!document.hidden;
+  hintEl.style.opacity=on?'1':'0';hintEl.style.pointerEvents=on?'auto':'none';
+}
+window.addEventListener('scroll',hintUpdate,{passive:true});window.addEventListener('resize',hintUpdate);
+try{new ResizeObserver(hintUpdate).observe(document.body)}catch(e){}
+setInterval(hintUpdate,1000);
 setInterval(()=>{
   if(document.hidden)return;
   if(idle()){if(!paused){paused=true;idleBar.style.display='block'}return}
@@ -211,6 +228,7 @@ function render(){
   notifyCheck();
   winCheck();
   champCheck();
+  requestAnimationFrame(hintUpdate);
 }
 function setTab(t){const was=tab;tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
 
