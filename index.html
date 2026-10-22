@@ -141,8 +141,8 @@ async function api(action,extra){
 const me=()=>tok?tok.split('.')[0]:null;
 const pn=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?esc(p.name):null};
 const pn2=h=>{const k=h.indexOf('(');return k>0?`<span class="block">${h.slice(0,k).trim()}</span><span class="block text-xs font-semibold opacity-80 mt-0.5">${h.slice(k).trim()}</span>`:h};   // prénom sur la 1re ligne, mots entre parenthèses sur la 2e (h = nom déjà échappé)
-const AVL='🐶🐱🦊🐼🐸🦁🐵🐧🦄🐙⚽🏀🎾🏓🎯🎲🍕🍔🍩🍉🍒🚀💎🔥🌈⭐🎸🎧🎩🍀'.match(/\p{Extended_Pictographic}/gu);   // même liste fermée que sur le serveur
-const av=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p&&p.av?` <span class="flex-none" style="font-size:1.05em;line-height:1">${p.av}</span>`:''};
+const AVL='🐶🐱🦊🐼🐸🦁🐵🐧🦄🐙⚽🏀🎾🏓🎯🎲🍕🍔🍩🍉🍒🚀💎🔥🌈⭐🎸🎧🎩🍀👩👸🧚💃👗👠👜💄💅🎀🌸🌺🌷🌻🦋🐝🍓🍑🧁💖🦚🦩🐚🌙'.match(/\p{Extended_Pictographic}/gu);   // même liste fermée que sur le serveur
+const av=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p&&p.av?` <span class="flex-none" style="margin-left:.35rem;font-size:1.05em;line-height:1">${p.av}</span>`:''};
 const raw=id=>{const p=S.cfg&&S.cfg.players.find(x=>x.id===id);return p?p.name:'?'};
 const mk=(r,i)=>`m${r}_${i}`;
 // Tableau : tous les joueurs jouent dès le tour 1 ; si un tour compte un nombre impair de joueurs, l'un d'eux est « exempté » (il passe directement au tour suivant)
