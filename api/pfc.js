@@ -88,9 +88,28 @@ const PZ_UI = {
   take: { label: '🛍️ Recevoir ma carte cadeau (20 €)', quote: '« Merci pour ce tournoi ! Je récupère mon lot. »', confirm: 'Confirmer : tu souhaites recevoir ta carte cadeau de 20 € ?\n\nTon choix sera définitif.', done: "✅ C'est noté : tu as choisi de recevoir ta carte cadeau (20 €).", sub: "L'organisateur te la remettra.", admin: '🛍️ souhaite <b>recevoir</b> la carte cadeau (20 €)' },
   give: { label: '🤝 Offrir mon lot pour le prochain tournoi', quote: "« Je choisis d'offrir cette valeur pour enrichir la dotation du prochain vainqueur (cagnotte portée à 40 €) ! »", confirm: 'Confirmer : tu souhaites offrir ton lot pour le prochain tournoi (cagnotte portée à 40 €) ?\n\nTon choix sera définitif.', done: "✅ Merci pour ce beau geste ! Tu as choisi d'offrir ton lot.", sub: 'La cagnotte du prochain tournoi sera portée à 40 €.', admin: '🤝 <b>offre</b> son lot : cagnotte du prochain tournoi portée à 40 €' },
 };
+// Petits lots : perdant de la finale (friandise précisée par lui, eau, ou rien) et vainqueur de la petite finale (eau ou rien). Mêmes règles : textes jamais dans la page, choix définitif.
+const pzKey2 = (cfg) => 'pfc:prize:' + (cfg.tid || '') + ':2', pzKey3 = (cfg) => 'pfc:prize:' + (cfg.tid || '') + ':3';
+const nothing = { k: 'none', label: '🙂 Rien, le plaisir de participer', quote: '« Participer était déjà un beau cadeau ! »', confirm: 'Confirmer : tu ne souhaites aucun lot, juste le plaisir de participer ?\n\nTon choix sera définitif.', done: '✅ C\'est noté : le plaisir de participer te suffit.', sub: 'Merci d\'avoir joué !', admin: '🙂 ne souhaite <b>rien</b> (le plaisir de participer)' };
+const water = { k: 'water', label: '💧 Une bouteille d\'eau', quote: '« Une petite pause rafraîchissante, merci ! »', confirm: 'Confirmer : tu souhaites une bouteille d\'eau ?\n\nTon choix sera définitif.', done: '✅ C\'est noté : tu as choisi une bouteille d\'eau.', sub: 'L\'organisateur te l\'offrira.', admin: '💧 souhaite une <b>bouteille d\'eau</b>' };
+const PZ2_UI = {
+  intro: 'Pour te remercier d\'avoir joué jusqu\'au bout, l\'organisateur te propose un petit lot.',
+  ask: '🎁 Que souhaites-tu choisir ?',
+  opts: [
+    { k: 'snack', label: '🍫 Une friandise au distributeur', quote: '« Une petite douceur, s\'il vous plaît ! »', input: 'Précise ta friandise (ex. : barre chocolatée…)', confirm: 'Confirmer : tu souhaites cette friandise au distributeur ?\n\nTon choix sera définitif.', done: '✅ C\'est noté : tu as choisi une friandise au distributeur.', sub: 'L\'organisateur te l\'offrira.', admin: '🍫 souhaite une <b>friandise au distributeur</b>' },
+    water, nothing,
+  ],
+};
+const PZ3_UI = {
+  intro: 'Pour fêter ce podium, l\'organisateur te propose un petit lot.',
+  ask: '🎁 Que souhaites-tu choisir ?',
+  opts: [water, nothing],
+};
+const PZX = { second: { key: pzKey2, ui: PZ2_UI }, third: { key: pzKey3, ui: PZ3_UI } };
+const admPz = async (cfg, role) => { const X = PZX[role], p = await redis.get(X.key(cfg)), o = p && X.ui.opts.find((x) => x.k === p.choice); return p ? { ...p, label: o ? o.admin : '' } : null; };
 async function wipe() {
   const cfg = await redis.get('pfc:cfg');
-  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), redis.del(svKey(cfg)), redis.del(pzKey(cfg))]);   // matchs, présence et sondage
+  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), redis.del(svKey(cfg)), redis.del(pzKey(cfg)), redis.del(pzKey2(cfg)), redis.del(pzKey3(cfg))]);   // matchs, présence et sondage
   await redis.del('pfc:cfg', 'pfc:pins', 'pfc:emails'); // 'pfc:emails' : nettoyage d'anciennes données
 }
 // Termine un match : désigne le vainqueur (ff = joueur éliminé pour dépassement de délai) et le fait avancer
@@ -231,17 +250,29 @@ module.exports = async (req, res) => {
       return res.json({ ok: 1 });
     }
 
-    if (a === 'prizeget' || a === 'prize') {   // lot du vainqueur de la finale (jeton obligatoire)
+    if (a === 'prizeget' || a === 'prize') {   // lots : champion, perdant de la finale, vainqueur de la petite finale (jeton obligatoire)
       const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || '');
       if (!me || !cfg.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
-      const st = await load(), fin = st.matches[mk(cfg.rounds - 1, 0)];
-      if (!fin || fin.w !== me) return res.status(409).json({ error: 'notchampion' });
-      const cur = await redis.get(pzKey(cfg));
-      if (a === 'prizeget') return res.json({ choice: cur ? cur.choice : null, ui: PZ_UI });
-      if (cur) return res.json({ choice: cur.choice, already: 1 });   // choix définitif
-      if (!['take', 'give'].includes(b.choice)) return res.status(400).json({ error: 'choix' });
-      await redis.set(pzKey(cfg), { by: me, choice: b.choice, t: Date.now() });
-      return res.json({ choice: b.choice });
+      const st = await load(), fin = st.matches[mk(cfg.rounds - 1, 0)], th = st.matches.third;
+      const role = fin && fin.w === me ? 'champ' : fin && fin.w && (fin.a === me || fin.b === me) ? 'second' : th && th.w === me ? 'third' : null;
+      if (!role) return res.status(409).json({ error: 'notchampion' });
+      if (role === 'champ') {
+        const cur = await redis.get(pzKey(cfg));
+        if (a === 'prizeget') return res.json({ role, choice: cur ? cur.choice : null, ui: PZ_UI });
+        if (cur) return res.json({ role, choice: cur.choice, already: 1 });   // choix définitif
+        if (!['take', 'give'].includes(b.choice)) return res.status(400).json({ error: 'choix' });
+        await redis.set(pzKey(cfg), { by: me, choice: b.choice, t: Date.now() });
+        return res.json({ role, choice: b.choice });
+      }
+      const X = PZX[role], cur = await redis.get(X.key(cfg));
+      if (a === 'prizeget') return res.json({ role, choice: cur ? cur.choice : null, snack: cur ? cur.snack || '' : '', ui: X.ui });
+      if (cur) return res.json({ role, choice: cur.choice, snack: cur.snack || '', already: 1 });   // choix définitif
+      const o = X.ui.opts.find((x) => x.k === b.choice);
+      if (!o) return res.status(400).json({ error: 'choix' });
+      const snack = o.input ? String(b.snack || '').replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+      if (o.input && !snack) return res.status(400).json({ error: 'precise' });
+      await redis.set(X.key(cfg), { by: me, choice: o.k, snack, t: Date.now() });
+      return res.json({ role, choice: o.k, snack });
     }
 
     if (a === 'play') {
@@ -391,7 +422,8 @@ module.exports = async (req, res) => {
       if (a === 'admin') {
         const cfg = await redis.get('pfc:cfg'), locks = {};
         if (cfg) for (const p of cfg.players) { const st = await redis.get(lockKey(cfg, p.id)); if (st && st.until > Date.now()) locks[p.id] = st.until; }
-        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, survey: cfg ? await svResults(cfg) : null, prize: cfg ? await (async () => { const p = await redis.get(pzKey(cfg)); return p ? { ...p, label: PZ_UI[p.choice] ? PZ_UI[p.choice].admin : '' } : null; })() : null });
+        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, survey: cfg ? await svResults(cfg) : null, prize: cfg ? await (async () => { const p = await redis.get(pzKey(cfg)); return p ? { ...p, label: PZ_UI[p.choice] ? PZ_UI[p.choice].admin : '' } : null; })() : null,
+          prizes: cfg ? { second: await admPz(cfg, 'second'), third: await admPz(cfg, 'third') } : null });
       }
       if (a === 'reset') { await wipe(); return res.json({ ok: 1 }); }
 
