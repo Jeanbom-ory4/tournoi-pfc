@@ -270,7 +270,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'clearavatar', 'avset'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'clearavatar', 'avset', 'reorder'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -305,6 +305,22 @@ module.exports = async (req, res) => {
         if (!l.length) return res.status(400).json({ error: 'vide' });
         await redis.set(AV_KEY, l);
         return res.json({ ok: 1, list: l });
+      }
+      if (a === 'reorder') {   // place des joueurs au tour 1 (avant le lancement) : ordre choisi, ou nouveau tirage au sort
+        const cfg = await redis.get('pfc:cfg');
+        if (!cfg) return res.status(400).json({ error: 'tournoi' });
+        if (cfg.started !== false) return res.status(409).json({ error: 'started' });
+        let players = cfg.players, doShuffle = true;
+        if (!b.shuffle) {
+          const order = Array.isArray(b.order) ? b.order.map(String) : [], byId = new Map(cfg.players.map((p) => [p.id, p]));
+          if (order.length !== byId.size || new Set(order).size !== order.length || !order.every((id) => byId.has(id))) return res.status(400).json({ error: 'ordre' });
+          players = order.map((id) => byId.get(id)); doShuffle = false;
+        }
+        const { rounds, counts, M } = build(players, doShuffle);
+        if (rounds !== cfg.rounds) return res.status(500).json({ error: 'structure' });
+        await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
+        await Promise.all(Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)));
+        return res.json({ ok: 1 });
       }
       if (a === 'clearavatar') {
         const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
