@@ -856,10 +856,40 @@ function waiting(){
   }
   return out;
 }
+let ordD=null,ordSel=null,ordBusy=false;   // brouillon de l'ordre du tour 1 (avant lancement) et joueur sélectionné
+const ordCur=()=>{const o=[];for(let i=0;i<cntC(0);i++){const m=S.matches[mk(0,i)];if(m){if(m.a)o.push(m.a);if(m.b)o.push(m.b)}}return o};
+function ordCard(){
+  const cur=ordCur();if(ordD&&[...ordD].sort().join()!==[...cur].sort().join()){ordD=null;ordSel=null}   // joueurs ajoutés/retirés entre-temps : on repart de l'ordre réel
+  const d=ordD||cur,dirty=!!ordD&&ordD.join()!==cur.join(),pairs=[];
+  for(let i=0;i<d.length;i+=2)pairs.push([d[i],d[i+1]]);
+  const chip=(id,k)=>`<button onclick="ordPick(${k})" class="flex-1 min-w-0 px-2 py-2 rounded-xl text-sm font-bold text-left truncate ${ordSel===k?'bg-yellow-300 text-yellow-950':'bg-white/20'}">${esc(raw(id))}</button>`;
+  return wrap(`<p class="font-bold mb-1">🎲 Place des joueurs au tour 1</p><p class="text-sm opacity-90 mb-2">Touche un joueur, puis un autre : ils échangent leurs places. Valide avec « Enregistrer l'ordre ». Possible tant que le tournoi n'est pas lancé.</p>${pairs.map((p,i)=>`<div class="flex items-center gap-2 mb-1"><span class="text-xs opacity-70" style="width:1.6rem">${i+1}.</span>${chip(p[0],2*i)}${p[1]?`<span class="text-xs opacity-80">vs</span>${chip(p[1],2*i+1)}`:`<span class="flex-1 text-xs opacity-80 px-2">exempté(e) au 1er tour</span>`}</div>`).join('')}
+    <div class="flex gap-2 mt-3"><button ${dirty&&!ordBusy?'':'disabled'} onclick="ordSave()" class="flex-1 py-3 rounded-2xl font-black ${dirty?'bg-yellow-300 text-yellow-950':'bg-white/20 text-white/60'}">${ordBusy?'Enregistrement…':"Enregistrer l'ordre"}</button>${dirty?`<button onclick="ordD=null;ordSel=null;lastSig='';render()" class="px-4 py-3 rounded-2xl card font-bold">Annuler</button>`:''}</div>
+    <button onclick="ordShuffle()" class="mt-3 text-sm underline opacity-90">🔀 Refaire un tirage au sort complet</button>`);
+}
+function ordPick(k){
+  if(!ordD)ordD=ordCur().slice();
+  if(ordSel===null)ordSel=k;
+  else if(ordSel===k)ordSel=null;
+  else{[ordD[ordSel],ordD[k]]=[ordD[k],ordD[ordSel]];ordSel=null}
+  lastSig='';render();
+}
+async function ordSave(){
+  if(!ordD||ordBusy)return;ordBusy=true;lastSig='';render();
+  try{await api('reorder',{order:ordD});S=await loadState();ordD=null;ordSel=null}
+  catch(e){alert(e.status===409?'Le tournoi est déjà lancé : l\'ordre ne peut plus changer.':'Erreur : '+e.message)}
+  ordBusy=false;lastSig='';render();
+}
+async function ordShuffle(){
+  if(!confirm('Refaire un tirage au sort complet ? Tes échanges manuels seront remplacés.'))return;
+  try{await api('reorder',{shuffle:true});S=await loadState();ordD=null;ordSel=null}catch(e){alert('Erreur : '+e.message)}
+  lastSig='';render();
+}
 function startCard(){
   if(S.cfg.started!==false)return wrap(`<p class="font-bold">✅ Tournoi lancé</p>`);
   const cur=S.cfg.startAt;
   return wrap(`<p class="font-bold mb-1">🚦 Le tournoi n'a pas encore démarré</p><p class="text-sm opacity-90 mb-3">Les joueurs peuvent se connecter et voir le tableau, mais ils ne pourront pas jouer tant que tu n'as pas lancé le tournoi.</p><button onclick="startT()" class="w-full py-4 rounded-2xl bg-emerald-400 text-emerald-950 font-black text-lg">🚀 Lancer le tournoi</button>`)
+    +ordCard()
     +wrap(`<p class="font-bold mb-1">${CAL} Annoncer la date de lancement</p><p class="text-sm opacity-90 mb-2">Les joueurs la voient dans la rubrique « Jouer ». Le tournoi ne démarre pas tout seul : c'est toi qui appuies sur « Lancer le tournoi ».</p>${cur?`<p class="text-sm font-semibold mb-2">Annoncé : ${fmtWhen(cur)}</p>`:''}<input id="startAt" type="datetime-local" value="${cur?toInput(cur):''}" class="w-full rounded-xl p-3 text-slate-900"><div class="flex gap-2 mt-2"><button onclick="saveStart(false)" class="flex-1 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Enregistrer</button>${cur?'<button onclick="saveStart(true)" class="px-4 py-3 rounded-2xl card font-bold">Effacer</button>':''}</div>`)
     +wrap(`<p class="font-bold mb-1">➕ Ajouter des joueurs</p><p class="text-sm opacity-90 mb-2">Possible tant que le tournoi n'est pas lancé. Un prénom par ligne. Le tirage au sort est refait avec tous les joueurs ; les codes existants ne changent pas, et les nouveaux codes apparaissent dans la liste ci-dessous.</p><textarea id="newNames" rows="4" class="w-full rounded-xl p-3 text-slate-900" placeholder="Prénom&#10;Prénom"></textarea><button onclick="addPlayers()" class="w-full mt-2 py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Ajouter au tournoi</button>`);
 }
