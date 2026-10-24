@@ -195,6 +195,7 @@ setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.
 // Déconnecte automatiquement si le tournoi a été réinitialisé (jeton d'un ancien tournoi)
 function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
 async function refresh(){
+  lastRef=Date.now();
   if(tab==='apropos'&&loaded)return;   // « À propos » : contenu fixe, aucun rafraîchissement ni signal de présence (économie de requêtes)
   const f=document.activeElement;
   if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.type!=='checkbox'&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
@@ -226,10 +227,22 @@ function hintUpdate(){
 window.addEventListener('scroll',hintUpdate,{passive:true});window.addEventListener('resize',hintUpdate);
 try{new ResizeObserver(hintUpdate).observe(document.body)}catch(e){}
 setInterval(hintUpdate,1000);
+// Rafraîchissement lent (30 s au lieu de 10 s) quand il n'y a rien à surveiller de près : tournoi pas encore lancé, ou joueur éliminé / ayant terminé (il ne fait plus que regarder)
+const slowPoll=()=>{
+  if(!S.cfg)return false;
+  if(S.cfg.started===false)return true;
+  const id=me();if(!id||tab==='admin')return false;
+  if(myMatch())return false;
+  const lost=Object.values(S.matches).some(m=>m.w&&m.w!==id&&(m.a===id||m.b===id)),fin=S.matches[mk(S.cfg.rounds-1,0)];
+  return lost||!!(fin&&fin.w===id);
+};
+let lastRef=0;
 setInterval(()=>{
   if(document.hidden)return;
   if(idle()){if(!paused){paused=true;idleBar.style.display='block'}return}
-  if(tab==='apropos'){if(me()&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
+  const slow=slowPoll();
+  if(slow&&Date.now()-lastRef<28500)return;   // on saute 2 passages sur 3 : un rafraîchissement toutes les ~30 s
+  if(tab==='apropos'){if(me()&&!slow&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
   refresh();
 },10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none'}lastPing=0;refresh()}});
