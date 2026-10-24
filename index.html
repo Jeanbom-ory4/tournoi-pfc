@@ -149,10 +149,11 @@ const E={r:STONE,f:'📄',c:'✂️'},N={r:'Pierre',f:'Feuille',c:'Ciseaux'};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',popKey='',bigBoard=false,skew=0,watch=null,confSig='',confRaf=null,aboutOpen={rules:true,hist:false};
+let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',popKey='',bigBoard=false,skew=0,watch=null,confSig='',confRaf=null,aboutOpen={rules:true,hist:false},souv=false;   // souv : mode « souvenir » (tableau figé lu dans souvenir.json, aucun appel au serveur)
 $('#ttl').innerHTML='<div>'+STONE+' 📄 ✂️</div><div class="text-lg mt-1">Master Chifoumi — Édition RSP 2026</div>';
 
 async function api(action,extra){
+  if(souv)throw Object.assign(new Error('souvenir'),{status:0});
   const r=await fetch('/api/pfc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:tok,key:adminKey,...extra})});
   const j=await r.json().catch(()=>({}));
   if(!r.ok)throw Object.assign(new Error(j.error||'erreur'),{status:r.status,data:j});
@@ -195,6 +196,7 @@ setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.
 // Déconnecte automatiquement si le tournoi a été réinitialisé (jeton d'un ancien tournoi)
 function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
 async function refresh(){
+  if(souv){if(!loaded){loaded=true;render()}return}   // mode souvenir : rien à rafraîchir
   if(loaded&&tourOver()&&!inOrga())return;   // tournoi terminé : plus de rafraîchissement automatique (le chargement initial a déjà eu lieu)
   lastRef=Date.now();
   if(tab==='apropos'&&loaded)return;   // « À propos » : contenu fixe, aucun rafraîchissement ni signal de présence (économie de requêtes)
@@ -243,7 +245,7 @@ const slowPoll=()=>{
 };
 let lastRef=0;
 setInterval(()=>{
-  if(document.hidden)return;
+  if(document.hidden||souv)return;
   if(idle()){if(!paused){paused=true;idleBar.style.display='block'}return}
   if(tourOver()&&!inOrga())return;   // tournoi terminé : on n'interroge plus le serveur
   const slow=slowPoll();
@@ -251,8 +253,16 @@ setInterval(()=>{
   if(tab==='apropos'){if(me()&&!slow&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
   refresh();
 },10000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none'}lastPing=0;refresh()}});
-refresh();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!souv){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none'}lastPing=0;refresh()}});
+// Mode souvenir : si le fichier souvenir.json est présent à côté de index.html, on affiche le tableau figé qu'il contient et on n'appelle JAMAIS le serveur (zéro commande Upstash)
+(async()=>{
+  try{
+    const r=await fetch('souvenir.json',{cache:'no-store'});
+    if(r.ok){const j=await r.json();
+      if(j&&j.cfg&&Array.isArray(j.cfg.players)&&j.matches&&typeof j.matches==='object'){S={cfg:j.cfg,matches:j.matches};souv=true;tok=null;adminKey='';tab='tableau'}}
+  }catch(e){}
+  refresh();
+})();
 
 function render(){
   const app=$('#app'),hadFocus=document.activeElement&&document.activeElement.id==='pin';
@@ -262,11 +272,12 @@ function render(){
     const cid=me(),cf=S.matches[mk(S.cfg.rounds-1,0)],ck='pfc_cgo_'+(S.cfg.tid||'')+'_'+cid;
     if(cid&&cf&&cf.w===cid&&ls.get(ck)!=='1'){ls.set(ck,'1');if(tab!=='jeu'){tab='jeu';watch=null;bigBoard=false;window.scrollTo(0,0)}}
   }
-  const tabs=[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
+  const tabs=souv?[['tableau','🏆 Tableau'],['apropos','ℹ️ À propos']]:[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
+  const souvBar=souv?wrap('<p class="text-center font-bold">🕰 Souvenir du tournoi</p><p class="text-center text-sm mt-1 opacity-90">Le tournoi est terminé : voici le tableau final et tous les résultats.</p>'):'';
   const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
   const sh=$('#shell');if(sh)sh.style.maxWidth=window.innerWidth>=768?'42rem':'28rem';   // largeur fixée en style (indépendant de Tailwind)
-  app.innerHTML=nav+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
+  app.innerHTML=nav+souvBar+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
@@ -987,8 +998,17 @@ function adminView(){
     return `<div class="py-2 border-b border-white/20 text-sm">${head}<div class="opacity-90">Aucun coup joué pour le moment</div><div class="flex gap-2 mt-1">${bt('Éliminer '+pn(m.a),`adm2('forfeit','${k}','${m.a}')`,'forfeit:'+k+':'+m.a,'Éliminé(e)')}${bt('Éliminer '+pn(m.b),`adm2('forfeit','${k}','${m.b}')`,'forfeit:'+k+':'+m.b,'Éliminé(e)')}</div></div>`}).join(''):'<p class="text-sm">Aucun match en cours.</p>'}`);
   h+=pzAdmin();
   h+=svAdmin();
+  h+=wrap(`<p class="font-bold mb-1">🕰 Souvenir du tournoi</p>${tourOver()?`<p class="text-sm opacity-90 mb-2">Télécharge le tableau final dans un petit fichier <b>souvenir.json</b>. Dépose-le sur GitHub à côté de <b>index.html</b> : l'adresse affichera alors le tableau figé, sans plus aucune commande Upstash. Le fichier ne contient ni codes secrets, ni lots, ni sondage.</p><button onclick="exportSouv()" class="w-full py-3 rounded-2xl bg-yellow-300 text-yellow-950 font-black">💾 Télécharger souvenir.json</button>`:'<p class="text-sm opacity-90">Disponible une fois la finale et la petite finale jouées.</p>'}`);
   h+=wrap(`<button onclick="resetT()" class="w-full py-3 rounded-2xl ${confirmReset?'bg-rose-600':'card'} font-bold">${confirmReset?'Confirmer : tout supprimer':'Réinitialiser le tournoi'}</button><button onclick="adminKey='';ls.del('pfc_ak');adm=null;render()" class="block mx-auto mt-3 text-sm underline opacity-80">Quitter l'espace organisateur</button>`);
   return h;
+}
+async function exportSouv(){
+  try{
+    const j=await api('state');delete j.on;
+    const data={v:1,exportedAt:new Date().toISOString(),cfg:j.cfg,matches:j.matches};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='souvenir.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+  }catch(e){alert('Erreur : '+e.message)}
 }
 function drawQR(){const el=$('#qr');if(!el||!window.QRCode)return;el.innerHTML='';try{new QRCode(el,{text:location.origin+location.pathname,width:200,height:200})}catch(e){}}
 async function renameP(id){
