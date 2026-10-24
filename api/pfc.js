@@ -39,13 +39,9 @@ async function load() {
 }
 // Vue publique : ni PIN, et le coup en attente n'est JAMAIS renvoyé (seulement qui a joué)
 const pub = ({ cfg, matches }) => ({
-  cfg: cfg && { players: cfg.players.map(({ id, name, av }) => ({ id, name, av })), rounds: cfg.rounds, size: cfg.size || null, counts: cfg.counts || null, hours: hrs(DELAY), started: cfg.started !== false, tid: cfg.tid || '', startAt: cfg.startAt || null },
+  cfg: cfg && { players: cfg.players.map(({ id, name }) => ({ id, name })), rounds: cfg.rounds, size: cfg.size || null, counts: cfg.counts || null, hours: hrs(DELAY), started: cfg.started !== false, tid: cfg.tid || '', startAt: cfg.startAt || null },
   matches: Object.fromEntries(Object.entries(matches).map(([k, { rem, ...m }]) => [k, { ...m, pend: m.pend ? { by: m.pend.by } : null }])),
 });
-const AVATARS = new Set(Object.values({"smileys_emotion":["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","☺️","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥳","🥸","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","🙈","🙉","🙊","💌","💘","💝","💖","💗","💓","💞","💕","💟","❣️","💔","❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💯","💢","💥","💫","💨","🕳️","💬","👁️‍🗨️","🗨️","🗯️","💭","💤"],"people_body":["👋","🤚","🖐️","✋","🖖","👌","🤌","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁️","👶","🧒","👦","👧","🧑","👱","👨","🧔","👨‍🦰","👨‍🦱","👨‍🦳","👨‍🦲","👩","👩‍🦰","🧑‍🦰","👩‍🦱","🧑‍🦱","👩‍🦳","🧑‍🦳","👩‍🦲","🧑‍🦲","👱‍♀️","👱‍♂️","🧓","👴","👵","🙍","🙍‍♂️","🙍‍♀️","🙎","🙎‍♂️","🙎‍♀️","🙅","🙅‍♂️","🙅‍♀️","🙆","🙆‍♂️","🙆‍♀️","💁","💁‍♂️","💁‍♀️","🙋","🙋‍♂️","🙋‍♀️","🧏","🧏‍♂️","🧏‍♀️","🙇","🙇‍♂️","🙇‍♀️","🤦","🤦‍♂️","🤦‍♀️","🤷","🤷‍♂️","🤷‍♀️","🧑‍⚕️","👨‍⚕️","👩‍⚕️","🧑‍🎓","👨‍🎓","👩‍🎓","🧑‍🏫","👨‍🏫","👩‍🏫","🧑‍⚖️","👨‍⚖️","👩‍⚖️","🧑‍🌾","👨‍🌾","👩‍🌾","🧑‍🍳","👨‍🍳","👩‍🍳","🧑‍🔧","👨‍🔧","👩‍🔧","🧑‍🏭","👨‍🏭","👩‍🏭","🧑‍💼","👨‍💼","👩‍💼","🧑‍🔬","👨‍🔬","👩‍🔬","🧑‍💻","👨‍💻","👩‍💻","🧑‍🎤","👨‍🎤","👩‍🎤","🧑‍🎨","👨‍🎨","👩‍🎨","🧑‍✈️","👨‍✈️","👩‍✈️","🧑‍🚀","👨‍🚀","👩‍🚀","🧑‍🚒","👨‍🚒","👩‍🚒","👮","👮‍♂️","👮‍♀️","🕵️","🕵️‍♂️","🕵️‍♀️","💂","💂‍♂️","💂‍♀️","🥷","👷","👷‍♂️","👷‍♀️","🤴","👸","👳","👳‍♂️","👳‍♀️","👲","🧕","🤵","🤵‍♂️","🤵‍♀️","👰","👰‍♂️","👰‍♀️","👼","🎅","🤶","🧑‍🎄","🦸","🦸‍♂️","🦸‍♀️","🦹","🦹‍♂️","🦹‍♀️","🧙","🧙‍♂️","🧙‍♀️","🧚","🧚‍♂️","🧚‍♀️","🧛","🧛‍♂️","🧛‍♀️","🧜","🧜‍♂️","🧜‍♀️","🧝","🧝‍♂️","🧝‍♀️","🧞","🧞‍♂️","🧞‍♀️","🧟","🧟‍♂️","🧟‍♀️","💆","💆‍♂️","💆‍♀️","💇","💇‍♂️","💇‍♀️","🚶","🚶‍♂️","🚶‍♀️","🧍","🧍‍♂️","🧍‍♀️","🧎","🧎‍♂️","🧎‍♀️","🧑‍🦯","👨‍🦯","👩‍🦯","🧑‍🦼","👨‍🦼","👩‍🦼","🧑‍🦽","👨‍🦽","👩‍🦽","🏃","🏃‍♂️","🏃‍♀️","💃","🕺","🕴️","🧖","🧖‍♂️","🧖‍♀️","🧗","🧗‍♂️","🧗‍♀️","🤺","🏇","⛷️","🏂","🏌️","🏌️‍♂️","🏌️‍♀️","🏄","🏄‍♂️","🏄‍♀️","🚣","🚣‍♂️","🚣‍♀️","🏊","🏊‍♂️","🏊‍♀️","⛹️","⛹️‍♂️","⛹️‍♀️","🏋️","🏋️‍♂️","🏋️‍♀️","🚴","🚴‍♂️","🚴‍♀️","🚵","🚵‍♂️","🚵‍♀️","🤸","🤸‍♂️","🤸‍♀️","🤼","🤼‍♂️","🤼‍♀️","🤽","🤽‍♂️","🤽‍♀️","🤾","🤾‍♂️","🤾‍♀️","🤹","🤹‍♂️","🤹‍♀️","🧘","🧘‍♂️","🧘‍♀️","🛀","🧑‍🤝‍🧑","👭","👫","👬","👨‍👩‍👦","👨‍👩‍👧","👨‍👩‍👧‍👦","👨‍👩‍👦‍👦","👨‍👩‍👧‍👧","👨‍👨‍👦","👨‍👨‍👧","👨‍👨‍👧‍👦","👨‍👨‍👦‍👦","👨‍👨‍👧‍👧","👩‍👩‍👦","👩‍👩‍👧","👩‍👩‍👧‍👦","👩‍👩‍👦‍👦","👩‍👩‍👧‍👧","👨‍👦","👨‍👦‍👦","👨‍👧","👨‍👧‍👦","👨‍👧‍👧","👩‍👦","👩‍👦‍👦","👩‍👧","👩‍👧‍👦","👩‍👧‍👧","🗣️","👤","👥","🫂","👪","👣"],"animals_nature":["🐵","🐒","🦍","🦧","🐶","🐕","🦮","🐕‍🦺","🐩","🐺","🦊","🦝","🐱","🐈","🐈‍⬛","🦁","🐯","🐅","🐆","🐴","🐎","🦄","🦓","🦌","🦬","🐮","🐂","🐃","🐄","🐗","🐏","🐑","🐐","🐪","🐫","🦙","🦒","🐘","🦣","🦏","🦛","🐭","🐁","🐹","🐰","🐇","🐿️","🦫","🦔","🦇","🐻","🐻‍❄️","🐨","🐼","🦥","🦦","🦨","🦘","🦡","🐾","🦃","🐔","🐓","🐣","🐤","🐥","🐦","🐧","🕊️","🦅","🦆","🦢","🦉","🦤","🪶","🦩","🦚","🦜","🐸","🐊","🐢","🦎","🐍","🐲","🐉","🦕","🦖","🐳","🐋","🐬","🦭","🐟","🐠","🐡","🦈","🐙","🐚","🦀","🦞","🦐","🦑","🦪","🐌","🦋","🐛","🐜","🐝","🪲","🐞","🦗","🕷️","🕸️","🦂","🦠","💐","🌸","💮","🏵️","🌹","🥀","🌺","🌻","🌼","🌷","🌱","🪴","🌲","🌳","🌴","🌵","🌾","🌿","☘️","🍀","🍁","🍂","🍃","🍄"],"food_drink":["🍇","🍈","🍉","🍊","🍋","🍍","🥭","🍎","🍏","🍐","🍒","🍓","🫐","🥝","🍅","🫒","🥥","🥑","🥔","🥕","🌽","🌶️","🫑","🥒","🥬","🥦","🧄","🧅","🥜","🌰","🍞","🥐","🥖","🫓","🥨","🥯","🥞","🧇","🧀","🍖","🍗","🥩","🥓","🍔","🍟","🍕","🌭","🥪","🌮","🌯","🫔","🥙","🧆","🥚","🍳","🥘","🍲","🫕","🥣","🥗","🍿","🧈","🧂","🥫","🍱","🍘","🍙","🍚","🍛","🍜","🍝","🍠","🍢","🍣","🍤","🍥","🥮","🍡","🥟","🥠","🥡","🍦","🍧","🍨","🍩","🍪","🎂","🍰","🧁","🥧","🍫","🍬","🍭","🍮","🍯","🍼","🥛","☕","🫖","🍵","🥤","🧋","🧃","🧉","🧊","🥢","🍽️","🍴","🥄","🏺"],"travel_places":["🌍","🌎","🌏","🌐","🗺️","🗾","🧭","🏔️","⛰️","🌋","🗻","🏕️","🏖️","🏜️","🏝️","🏞️","🏟️","🏛️","🏗️","🧱","🪨","🪵","🛖","🏘️","🏚️","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽","⛲","⛺","🌁","🌃","🏙️","🌄","🌅","🌆","🌇","🌉","♨️","🎠","🎡","🎢","💈","🎪","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞","🚋","🚌","🚍","🚎","🚐","🚑","🚒","🚓","🚔","🚕","🚖","🚗","🚘","🚙","🛻","🚚","🚛","🚜","🏎️","🏍️","🛵","🦽","🦼","🛺","🚲","🛴","🛹","🛼","🚏","🛣️","🛤️","🛢️","⛽","🚨","🚥","🚦","🛑","🚧","⚓","⛵","🛶","🚤","🛳️","⛴️","🛥️","🚢","✈️","🛩️","🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡","🛰️","🚀","🛸","🛎️","🧳","⌛","⏳","⌚","⏰","⏱️","⏲️","🕰️","🕛","🕧","🕐","🕜","🕑","🕝","🕒","🕞","🕓","🕟","🕔","🕠","🕕","🕡","🕖","🕢","🕗","🕣","🕘","🕤","🕙","🕥","🕚","🕦","🌑","🌒","🌓","🌔","🌕","🌖","🌗","🌘","🌙","🌚","🌛","🌜","🌡️","☀️","🌝","🌞","🪐","⭐","🌟","🌠","🌌","☁️","⛅","⛈️","🌤️","🌥️","🌦️","🌧️","🌨️","🌩️","🌪️","🌫️","🌬️","🌀","🌈","🌂","☂️","☔","⛱️","⚡","❄️","☃️","⛄","☄️","🔥","💧","🌊"],"activities":["🎃","🎄","🎆","🎇","✨","🎈","🎉","🎊","🎋","🎍","🎎","🎏","🎐","🎑","🧧","🎀","🎁","🎗️","🎟️","🎫","🎖️","🏆","🏅","🥇","🥈","🥉","⚽","⚾","🥎","🏀","🏐","🏈","🏉","🎾","🥏","🎳","🏏","🏑","🏒","🥍","🏓","🏸","🥊","🥋","🥅","⛳","⛸️","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🪀","🪁","🎱","🔮","🪄","🎮","🕹️","🎲","🧩","🧸","🪅","🪆","♠️","♥️","♦️","♣️","♟️","🃏","🀄","🎴","🎭","🖼️","🎨","🧵","🪡","🧶","🪢"],"objects":["👓","🕶️","🥽","🥼","🦺","👔","👕","👖","🧣","🧤","🧥","🧦","👗","👘","🥻","🩳","👚","👛","👜","👝","🛍️","🎒","🩴","👞","👟","🥾","🥿","👠","👡","🩰","👢","👑","👒","🎩","🎓","🧢","🪖","⛑️","💄","💍","💎","🔇","🔈","🔉","🔊","📢","📣","📯","🔔","🔕","🎼","🎵","🎶","🎙️","🎚️","🎛️","🎤","🎧","📻","🎷","🎺","🪗","🎸","🎹","🎻","🪕","🥁","🪘","📱","📲","☎️","📞","📟","📠","🔋","🔌","💻","🖥️","🖨️","⌨️","🖱️","🖲️","💽","💾","💿","📀","🧮","🎥","🎞️","📽️","🎬","📺","📷","📸","📹","📼","🔍","🔎","🕯️","💡","🔦","🏮","🪔","📔","📕","📖","📗","📘","📙","📚","📓","📒","📃","📜","📄","📰","🗞️","📑","🔖","🏷️","🪙","💰","💴","💵","💶","💷","💸","💳","🧾","💹","✉️","📧","📨","📩","📤","📥","📦","📫","📪","📬","📭","📮","🗳️","✏️","✒️","🖋️","🖊️","🖌️","🖍️","📝","💼","📁","📂","🗂️","📅","📆","🗒️","🗓️","📇","📈","📉","📊","📋","📌","📍","📎","🖇️","📏","📐","✂️","🗃️","🗄️","🗑️","🔒","🔓","🔏","🔐","🔑","🗝️","🔨","⛏️","⚒️","🛠️","🪃","🏹","🛡️","🪚","🔧","🪛","🔩","⚙️","🗜️","⚖️","🦯","🔗","⛓️","🪝","🧰","🧲","🪜","⚗️","🧪","🧫","🧬","🔬","🔭","📡","🩹","🩺","🚪","🛗","🪞","🪟","🛋️","🪑","🚿","🛁","🪤","🪒","🧴","🧷","🧹","🧺","🪣","🧼","🪥","🧽","🧯","🛒","🗿","🪧"]}).flat()); // liste fermée (~1200 émoticônes, sans les vulgaires ni ceux de version récente)
-// Avatars autorisés : par défaut toute la liste ; l'organisateur peut la restreindre (clé conservée d'un tournoi à l'autre)
-const AV_KEY = 'pfc:avset';
-const avAllowed = async () => { const v = await redis.get(AV_KEY); const l = Array.isArray(v) ? v.filter((e) => AVATARS.has(e)) : []; return l.length ? new Set(l) : AVATARS; };
 const out = (st) => ({ ...pub(st), now: Date.now() });
 // Présence « en ligne » : chaque appli ouverte envoie un signal toutes les ~20 s ; la clé expire seule après 90 s.
 // Un joueur qui a choisi « Apparaître hors ligne » (b.hid) n'écrit rien. On ne renvoie que les joueurs des matchs en cours.
@@ -212,22 +208,6 @@ module.exports = async (req, res) => {
       return res.json(out(await load()));
     }
 
-    if (a === 'avlist') {   // liste des avatars proposés (publique, lue seulement à l'ouverture du sélecteur)
-      const v = await redis.get(AV_KEY), l = Array.isArray(v) ? v.filter((e) => AVATARS.has(e)) : [];
-      return res.json({ list: l.length ? l : null });   // null = toute la liste
-    }
-
-    if (a === 'avatar') {   // le joueur choisit son avatar dans la liste fermée (ou le retire)
-      const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || '');
-      const p = me && cfg.players.find((x) => x.id === me);
-      if (!p) return res.status(401).json({ error: 'auth' });
-      const v = b.av ? String(b.av) : '';
-      if (v && !(await avAllowed()).has(v)) return res.status(400).json({ error: 'avatar' });
-      if (v) p.av = v; else delete p.av;
-      await redis.set('pfc:cfg', cfg);
-      return res.json({ ok: 1 });
-    }
-
     if (a === 'surveyget' || a === 'survey') {   // sondage (joueur identifié par son jeton)
       const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || '');
       if (!me || !cfg.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
@@ -301,7 +281,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'clearavatar', 'avset', 'reorder'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'reorder'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -330,13 +310,6 @@ module.exports = async (req, res) => {
         cfg.startAt = at; await redis.set('pfc:cfg', cfg);
         return res.json({ ok: 1 });
       }
-      if (a === 'avset') {   // l'organisateur choisit les avatars proposés (list = null : tout autoriser)
-        if (b.list === null || b.list === undefined) { await redis.del(AV_KEY); return res.json({ ok: 1, list: null }); }
-        const l = [...new Set((Array.isArray(b.list) ? b.list : []).map(String).filter((e) => AVATARS.has(e)))];
-        if (!l.length) return res.status(400).json({ error: 'vide' });
-        await redis.set(AV_KEY, l);
-        return res.json({ ok: 1, list: l });
-      }
       if (a === 'reorder') {   // place des joueurs au tour 1 (avant le lancement) : ordre choisi, ou nouveau tirage au sort
         const cfg = await redis.get('pfc:cfg');
         if (!cfg) return res.status(400).json({ error: 'tournoi' });
@@ -351,13 +324,6 @@ module.exports = async (req, res) => {
         if (rounds !== cfg.rounds) return res.status(500).json({ error: 'structure' });
         await Promise.all(ids(cfg).map((i) => redis.del('pfc:m:' + i)));
         await Promise.all(Object.entries(M).map(([id, m]) => redis.set('pfc:m:' + id, m)));
-        return res.json({ ok: 1 });
-      }
-      if (a === 'clearavatar') {
-        const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
-        if (!p) return res.status(400).json({ error: 'joueur' });
-        delete p.av;
-        await redis.set('pfc:cfg', cfg);
         return res.json({ ok: 1 });
       }
       if (a === 'renameplayer') {
