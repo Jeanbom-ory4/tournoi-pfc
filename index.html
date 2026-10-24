@@ -201,13 +201,10 @@ const hintEl=document.createElement('button');hintEl.id='scrollHint';hintEl.type
 hintEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 hintEl.onclick=()=>window.scrollBy({top:Math.round(window.innerHeight*.8),behavior:'smooth'});
 document.body.appendChild(hintEl);
-const hintDone={jeu:false,tableau:false};
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
-  const hk=(tab==='jeu'||tab==='tableau')?tab:'';       // rubriques concernées : Jouer et Tableau
-  for(const k in hintDone)if(k!==hk)hintDone[k]=false;   // on a quitté la rubrique : il pourra réapparaître au retour
-  if(hk&&loaded&&window.scrollY>0&&rem<=70)hintDone[hk]=true; // arrivé en bas : il disparaît pour cette visite
-  const on=!!hk&&loaded&&!hintDone[hk]&&rem>70&&!document.hidden;
+  const hk=(tab==='jeu'||tab==='tableau');   // rubriques concernées : Jouer et Tableau. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
+  const on=hk&&loaded&&rem>70&&!document.hidden;
   hintEl.style.opacity=on?'1':'0';hintEl.style.pointerEvents=on?'auto':'none';
 }
 window.addEventListener('scroll',hintUpdate,{passive:true});window.addEventListener('resize',hintUpdate);
