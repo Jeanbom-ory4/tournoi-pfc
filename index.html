@@ -195,6 +195,7 @@ setInterval(()=>document.querySelectorAll('[data-cd]').forEach(el=>{const d=+el.
 // Déconnecte automatiquement si le tournoi a été réinitialisé (jeton d'un ancien tournoi)
 function checkSession(){if(tok&&S.cfg&&(tok.split('.')[1]!==(S.cfg.tid||'')||!pn(me()))){tok=null;ls.del('pfc_tok')}}
 async function refresh(){
+  if(loaded&&tourOver()&&!inOrga())return;   // tournoi terminé : plus de rafraîchissement automatique (le chargement initial a déjà eu lieu)
   lastRef=Date.now();
   if(tab==='apropos'&&loaded)return;   // « À propos » : contenu fixe, aucun rafraîchissement ni signal de présence (économie de requêtes)
   const f=document.activeElement;
@@ -228,8 +229,12 @@ window.addEventListener('scroll',hintUpdate,{passive:true});window.addEventListe
 try{new ResizeObserver(hintUpdate).observe(document.body)}catch(e){}
 setInterval(hintUpdate,1000);
 // Rafraîchissement lent (30 s au lieu de 10 s) quand il n'y a rien à surveiller de près : tournoi pas encore lancé, ou joueur éliminé / ayant terminé (il ne fait plus que regarder)
+// Tournoi terminé (finale et petite finale décidées) : plus aucun rafraîchissement automatique, sauf pour l'organisateur dans Orga (30 s) qui suit les lots et le sondage
+const tourOver=()=>{if(!S.cfg||S.cfg.started===false)return false;const fin=S.matches[mk(S.cfg.rounds-1,0)],th=S.matches.third;return !!(fin&&fin.w&&(S.cfg.rounds<2||(th&&th.w)))};
+const inOrga=()=>tab==='admin'&&!!adminKey;
 const slowPoll=()=>{
   if(!S.cfg)return false;
+  if(tourOver())return true;
   if(S.cfg.started===false)return true;
   const id=me();if(!id||tab==='admin')return false;
   if(myMatch())return false;
@@ -240,6 +245,7 @@ let lastRef=0;
 setInterval(()=>{
   if(document.hidden)return;
   if(idle()){if(!paused){paused=true;idleBar.style.display='block'}return}
+  if(tourOver()&&!inOrga())return;   // tournoi terminé : on n'interroge plus le serveur
   const slow=slowPoll();
   if(slow&&Date.now()-lastRef<28500)return;   // on saute 2 passages sur 3 : un rafraîchissement toutes les ~30 s
   if(tab==='apropos'){if(me()&&!slow&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
