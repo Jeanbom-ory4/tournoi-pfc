@@ -33,6 +33,22 @@ button{touch-action:manipulation}
 .flm{display:inline-block;transform-origin:50% 90%;animation:flm 1.3s ease-in-out infinite}
 @keyframes flm{0%,100%{transform:translateY(0) scale(1,1) rotate(-2deg);filter:brightness(1)}25%{transform:translateY(-1px) scale(1.06,1.14) rotate(2deg);filter:brightness(1.18)}50%{transform:translateY(0) scale(.97,1.03) rotate(-1deg);filter:brightness(1.05)}75%{transform:translateY(-1px) scale(1.04,1.1) rotate(3deg);filter:brightness(1.12)}}
 @media (prefers-reduced-motion:reduce){.flm{animation:none}}
+/* Scène d'introduction (première connexion) : objets dessinés à l'encre qui apparaissent un à un */
+.in-name{margin-top:10px;font-size:clamp(26px,6.5vw,44px);font-weight:700;letter-spacing:.08em;color:#fcd34d;opacity:0;animation:wfade 1.1s 1.9s forwards}
+.in-row{position:absolute;left:0;right:0;top:38%;display:flex;justify-content:center;align-items:flex-start;gap:3vw;padding:0 12px}
+.in-o{width:min(29vw,128px);text-align:center;opacity:0;transform:translateY(16px) scale(.9);animation:ino .9s var(--d) cubic-bezier(.2,.8,.3,1.1) forwards;font-family:"Noto Serif","Songti SC",STSong,SimSun,Georgia,serif;color:#fbe7c0}
+.in-o svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));animation:inb 3s ease-in-out infinite alternate}
+.in-o small{display:block;margin-top:6px;font-size:14px;letter-spacing:.12em;opacity:.9}
+@keyframes ino{to{opacity:1;transform:none}}
+@keyframes inb{from{transform:translateY(-2px)}to{transform:translateY(3px)}}
+.in-o .dr{stroke-dasharray:420;stroke-dashoffset:420;animation:ind 1.3s var(--d) ease-out forwards}
+.in-o .fl{opacity:0;animation:inf .7s calc(var(--d) + .55s) ease-out forwards}
+@keyframes ind{to{stroke-dashoffset:0}}@keyframes inf{to{opacity:1}}
+.win-t.in-b{top:67%}
+.in-b .win-s{animation-delay:4.4s}
+.in-b .win-seal{animation-delay:5.1s}
+.win-rm .in-o,.win-rm .in-o svg,.win-rm .in-o .dr,.win-rm .in-o .fl,.win-rm .in-name{animation:none;opacity:1;transform:none;stroke-dashoffset:0}
+.win-rm .in-b .win-s,.win-rm .in-b .win-seal{animation-delay:.3s;animation-duration:.6s}
 /* Indicateur « il y a une suite en bas » (page Jouer) */
 #scrollHint{position:fixed;right:max(14px,calc(50% - 14rem + 10px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;padding:0;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(20,10,35,.72);color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s ease}
 #scrollHint svg{width:1.3rem;height:1.3rem;animation:hnt 1.4s ease-in-out infinite}
@@ -235,6 +251,7 @@ function render(){
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
+  introCheck();
   winCheck();
   champCheck();
   requestAnimationFrame(hintUpdate);
@@ -720,6 +737,45 @@ function pendingOf(key,list){
   if(nw.length){ls.set(key,JSON.stringify(ids));return nw[0]}
   return null;
 }
+// ---- Scène d'introduction (première connexion de ce joueur sur cet appareil) ----
+function introArt(){
+  const stone=`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="inSt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c3c6d1"/><stop offset="1" stop-color="#4f5467"/></linearGradient></defs>
+    <path class="fl" fill="url(#inSt)" d="M16 80C8 58 24 32 52 28c26-3 50 11 52 38 1 19-15 29-42 29-24 0-42-5-46-15z"/>
+    <path class="dr" fill="none" stroke="#1c1230" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" d="M16 80C8 58 24 32 52 28c26-3 50 11 52 38 1 19-15 29-42 29-24 0-42-5-46-15z"/>
+    <path class="dr" fill="none" stroke="#1c1230" stroke-width="2.4" stroke-linecap="round" d="M46 44c6 10 2 18 10 26M74 40c-3 9 5 13 2 22M34 74c8 2 14 0 18 5"/>
+    <path class="dr" fill="none" stroke="#f1ece0" stroke-width="2.8" stroke-linecap="round" opacity=".75" d="M28 56c5-9 15-14 27-15"/></svg>`;
+  const paper=`<svg viewBox="0 0 120 120" aria-hidden="true">
+    <path class="fl" fill="#f6e7c8" d="M34 20h52v78H34z"/>
+    <path class="fl" fill="#d9b36c" d="M27 11h66a6 6 0 010 12H27a6 6 0 010-12zM27 96h66a6 6 0 010 12H27a6 6 0 010-12z"/>
+    <path class="dr" fill="none" stroke="#1c1230" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" d="M34 23v73M86 23v73M27 11h66a6 6 0 010 12H27a6 6 0 010-12zM27 96h66a6 6 0 010 12H27a6 6 0 010-12z"/>
+    <path class="dr" fill="none" stroke="#5a3a1c" stroke-width="3" stroke-linecap="round" d="M44 36c10-2 22 2 32-1M44 47c9 2 20-2 28 0M44 58c11-2 21 2 32 0M44 69c8 1 14-1 20 0"/>
+    <rect class="fl" x="66" y="76" width="16" height="16" rx="2" fill="#c8281f"/><path class="fl" d="M70 84c3-4 7-4 8 0" fill="none" stroke="#fbe7c0" stroke-width="2" stroke-linecap="round"/></svg>`;
+  const sc=`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="inSc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0f3fa"/><stop offset="1" stop-color="#8d96aa"/></linearGradient></defs>
+    <path class="fl" fill="url(#inSc)" d="M85 8l5 4-26 54-8-6zM35 8l-5 4 26 54 8-6z"/>
+    <path class="dr" fill="none" stroke="#1c1230" stroke-width="2.8" stroke-linejoin="round" d="M85 8l5 4-26 54-8-6zM35 8l-5 4 26 54 8-6z"/>
+    <path class="dr" fill="none" stroke="#e0b24a" stroke-width="5.5" stroke-linecap="round" d="M60 64l-14 22M60 64l14 22"/>
+    <circle class="dr" cx="38" cy="98" r="12" fill="none" stroke="#c8281f" stroke-width="5.5"/><circle class="dr" cx="82" cy="98" r="12" fill="none" stroke="#c8281f" stroke-width="5.5"/>
+    <circle class="fl" cx="60" cy="63" r="4.2" fill="#e0b24a" stroke="#1c1230" stroke-width="1.6"/></svg>`;
+  return `<div class="in-row"><div class="in-o" style="--d:2.7s">${stone}<small>Pierre</small></div><div class="in-o" style="--d:3.3s">${paper}<small>Feuille</small></div><div class="in-o" style="--d:3.9s">${sc}<small>Ciseaux</small></div></div>`;
+}
+function showIntro(){
+  if(winShowing||!S.cfg||!me())return;winShowing=true;
+  const small=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const nm=(raw(me())||'').split('(')[0].trim();
+  const seal='<svg viewBox="0 0 60 60" width="46" height="46"><rect x="3" y="3" width="54" height="54" rx="6" fill="#c8281f"/><g fill="none" stroke="#fbe7c0" stroke-width="3.2" stroke-linecap="round"><path d="M16 40 C16 28 28 20 38 24 C46 28 44 38 36 38 C30 38 28 32 33 30"/><path d="M12 44 C22 48 34 48 46 42" opacity=".85"/></g></svg>';
+  const el=document.createElement('div');el.className='win-ov'+(small?' win-rm':'');
+  el.innerHTML=winArt()+`<div class="win-t"><div class="win-k s" style="animation-delay:.9s">Bienvenue</div><div class="in-name">${esc(nm)}</div></div>${introArt()}<div class="win-t in-b"><div class="win-s">Trois gestes, un seul grand maître.</div><div class="win-seal">${seal}</div></div><div class="win-h" style="animation-delay:6s">Touche pour continuer</div>`;
+  let done=false;const close=()=>{if(done)return;done=true;el.classList.add('out');setTimeout(()=>{el.remove();winShowing=false;try{winCheck();champCheck()}catch(e){}},650)};
+  el.onclick=close;document.body.appendChild(el);setTimeout(close,small?7000:11000);
+}
+function introCheck(){
+  const id=me();if(!id||!S.cfg||winShowing)return;
+  if(ls.get('pfc_intro')!==null)return;   // une seule fois pour toujours sur cet appareil (après la connexion avec le code)
+  ls.set('pfc_intro','1');
+  // Un joueur qui a déjà joué (coup, match terminé ou éliminé) a forcément déjà vu l'introduction : on ne la lui remontre pas, même sur un autre appareil
+  const played=Object.values(S.matches).some(m=>(m.a===id||m.b===id)&&!isBye(m)&&((m.hist&&m.hist.length)||m.w||(m.pend&&((m.pend.by==='a'&&m.a===id)||(m.pend.by==='b'&&m.b===id)))));
+  if(!played)showIntro();
+}
 function winCheck(){
   const id=me();if(!id||!S.cfg||S.cfg.started===false||winShowing)return;
   const tid=S.cfg.tid||'',all=Object.entries(S.matches).map(([k,m])=>({...m,id:k}));
@@ -847,7 +903,7 @@ function aboutView(){
     <p class="font-bold mb-1">3. La conquête du monde</p>
     <p>Au XXᵉ siècle, le jeu quitte l'Asie pour l'Occident et se diffuse à travers la planète. Malgré sa simplicité apparente, il est devenu un sujet d'étude en théorie des jeux et en psychologie : car au-delà du hasard, gagner au Chifoumi repose sur l'observation, le rythme et la lecture de son adversaire.</p>
   </details>
-  <p class="font-semibold text-center">Bons matchs et que le/la meilleur(e) gagne !</p>`);
+  <p class="font-semibold text-center">Bons matchs et que le/la meilleur(e) gagne !</p>${me()?`<div class="text-center mt-4"><button onclick="showIntro()" class="text-sm underline opacity-90">🎬 Revoir l'introduction</button></div>`:''}`);
 }
 
 /* ---------- Organisateur ---------- */
