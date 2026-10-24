@@ -6,7 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg1:#2e1065;--bg2:#be185d;--card:rgba(255,255,255,.14)}
-html{background:var(--bg2)}   /* couleur de secours : si une zone n'est pas encore repeinte (défilement rapide, barre d'adresse qui se masque), elle reste rose et non blanche */
+html{background:#a0165f}   /* couleur de secours : si une zone n'est pas encore repeinte (défilement rapide, barre d'adresse qui se masque), elle reste rose et non blanche */
 body::before{content:"";position:fixed;left:0;right:0;top:0;height:100vh;height:100lvh;z-index:-1;background:linear-gradient(160deg,var(--bg1),var(--bg2));pointer-events:none}   /* dégradé sur toute la plus grande hauteur d'écran possible (barre d'adresse masquée) */
 body{margin:0;min-height:100vh;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 .card{background:var(--card);backdrop-filter:blur(8px);border-radius:1.25rem}
