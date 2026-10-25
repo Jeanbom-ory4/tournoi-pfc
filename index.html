@@ -186,7 +186,7 @@ const mlabel=m=>m.id==='third'?'Petite finale (3e place)':rlabel(m.r);
 const wrap=h=>`<div class="card p-4 mb-3">${h}</div>`;
 const now=()=>Date.now()+skew;
 function norm(j){if(j&&j.now){skew=j.now-Date.now();delete j.now}if(j&&!j.on&&S&&S.on)j.on=S.on;return j}   // « on » : joueurs en ligne (reçu seulement à chaque signal de présence)
-let hid=ls.get('pfc_hid')==='1',lastPing=0;   // hid : « Apparaître hors ligne »
+let hid=ls.get('pfc_hid')==='1',lastPing=0,lastAdm=0;   // hid : « Apparaître hors ligne »
 const isOn=id=>!!id&&!!S.on&&S.on.includes(id);
 const pdot=id=>`<span class="pdot${isOn(id)?' on':''}"></span>`;
 const presTxt=id=>`<span class="pdot${isOn(id)?' on':''}"></span>${isOn(id)?'En ligne':'Hors ligne'}`;
@@ -206,7 +206,7 @@ async function refresh(){
   if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.type!=='checkbox'&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
   try{S=await loadState();loadErr=null}catch(e){loadErr=e.message+(e.status?' (HTTP '+e.status+')':'')}
   loaded=true;
-  if(adminKey&&tab==='admin'){try{adm=await api('admin')}catch(e){if(e.status===401){adminKey='';ls.del('pfc_ak')}}}
+  if(adminKey&&tab==='admin'&&(!adm||Date.now()-lastAdm>=60000)){lastAdm=Date.now();try{adm=await api('admin')}catch(e){if(e.status===401){adminKey='';ls.del('pfc_ak')}}}   // « Orga » : codes, blocages, lots et sondage ne sont relus qu'une fois par minute (c'est l'écran le plus coûteux : ~1 commande par joueur)
   checkSession();
   const sig=JSON.stringify([S,loadErr,adm,tok,loaded]);
   if(sig===lastSig)return;   // rien n'a changé : on ne redessine pas
@@ -288,7 +288,7 @@ function render(){
   champCheck();
   requestAnimationFrame(hintUpdate);
 }
-function setTab(t){const was=tab;tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey)api('admin').then(a=>{adm=a;render()}).catch(()=>{});render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
+function setTab(t){const was=tab;tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
 
 /* ---------- Joueur ---------- */
 function myMatch(){
