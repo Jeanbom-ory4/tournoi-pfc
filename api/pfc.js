@@ -10,7 +10,19 @@ const SECRET = process.env.SESSION_SECRET || 'changez-moi';
 const ADMIN = process.env.ADMIN_KEY;
 const BEATS = { r: 'c', f: 'r', c: 'f' };
 const CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const DELAY = (Number(process.env.DEADLINE_HOURS) || 48) * 3600e3; // délai pour jouer après le coup de l'adversaire
+const DELAY = (Number(process.env.DEADLINE_HOURS) || 24) * 3600e3; // délai pour jouer après le coup de l'adversaire (le week-end ne compte pas : voir dueFrom)
+// Échéance « week-end exclu » : on compte `ms` de temps ouvré (lundi à vendredi, heure de Paris) ; le samedi et le dimanche, l'horloge est arrêtée et reprend le lundi à 0 h.
+const PARIS = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', weekday: 'short', hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' });
+const parisAt = (t) => { const o = {}; for (const x of PARIS.formatToParts(new Date(t))) o[x.type] = x.value; return { wk: o.weekday === 'Sat' || o.weekday === 'Sun', since: ((+o.hour * 60 + +o.minute) * 60 + +o.second) * 1000 }; };
+function dueFrom(from, ms) {
+  let t = from, rem = ms;
+  for (let i = 0; i < 400 && rem > 0; i++) {
+    const { wk, since } = parisAt(t), toMid = Math.max(1000, 86400000 - since);
+    if (wk) { t += toMid; continue; }
+    const step = Math.min(rem, toMid); t += step; rem -= step;
+  }
+  return t;
+}
 const MAX_TRIES = Number(process.env.MAX_TRIES) || 7;                  // mauvais codes avant blocage
 const LOCK = (Number(process.env.LOCK_MINUTES) || 3) * 60e3;           // durée du blocage d'un joueur
 const lockKey = (cfg, id) => 'pfc:lock:' + (cfg.tid || '') + ':' + id;
@@ -265,7 +277,7 @@ module.exports = async (req, res) => {
       if (!m || m.w || !m.a || !m.b || (m.a !== me && m.b !== me)) return res.status(400).json({ error: 'match' });
       const side = m.a === me ? 'a' : 'b';
       if (!m.pend) {
-        m.pend = { by: side, mv: b.mv }; m.due = Date.now() + DELAY;
+        m.pend = { by: side, mv: b.mv }; m.due = dueFrom(Date.now(), DELAY);
         await redis.set(key, m);
       } else if (m.pend.by !== side) {
         const o = m.pend.mv, ma = side === 'a' ? b.mv : o, mb = side === 'a' ? o : b.mv;
@@ -295,7 +307,7 @@ module.exports = async (req, res) => {
         if (!cfg || !m || m.w) return res.status(400).json({ error: 'match' });
         if (a === 'extend') {
           if (!m.pend) return res.status(400).json({ error: 'match' });
-          m.due = Math.max(m.due || 0, Date.now()) + 24 * 3600e3; await redis.set(key, m);
+          m.due = dueFrom(Math.max(m.due || 0, Date.now()), 24 * 3600e3); await redis.set(key, m);
         } else {
           if (b.loser !== m.a && b.loser !== m.b) return res.status(400).json({ error: 'joueur' });
           await finish(cfg, m, b.loser === m.a ? m.b : m.a, b.loser);
