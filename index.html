@@ -225,7 +225,7 @@ hintEl.onclick=()=>window.scrollBy({top:Math.round(window.innerHeight*.8),behavi
 document.body.appendChild(hintEl);
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
-  const hk=(tab==='jeu'||tab==='tableau');   // rubriques concernées : Jouer et Tableau. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
+  const hk=(tab==='jeu'||tab==='tableau'||tab==='apropos');   // rubriques concernées : Jouer, Tableau et À propos. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
   const on=hk&&loaded&&rem>70&&!document.hidden;
   hintEl.style.opacity=on?'1':'0';hintEl.style.pointerEvents=on?'auto':'none';
 }
