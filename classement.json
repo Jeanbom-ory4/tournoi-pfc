@@ -1,0 +1,231 @@
+{
+ "v": 1,
+ "bareme": {
+  "gc": {
+   "label": "Grand chelem",
+   "V": 1000,
+   "F": 650,
+   "3": 450,
+   "4": 400,
+   "SF": 425,
+   "QF": 200,
+   "R16": 100,
+   "R32": 50,
+   "R1": 10
+  },
+  "p500": {
+   "label": "Tournoi 500",
+   "V": 500,
+   "F": 325,
+   "3": 225,
+   "4": 200,
+   "SF": 213,
+   "QF": 100,
+   "R16": 50,
+   "R32": 25,
+   "R1": 5
+  },
+  "p250": {
+   "label": "Petit tournoi",
+   "V": 250,
+   "F": 160,
+   "3": 110,
+   "4": 100,
+   "SF": 105,
+   "QF": 50,
+   "R16": 25,
+   "R32": 12,
+   "R1": 3
+  }
+ },
+ "tournois": [
+  {
+   "id": "quiz-2026-02",
+   "nom": "Quiz Game",
+   "date": "2026-02-09",
+   "type": "gc",
+   "res": [
+    [
+     "Saoussan (AFE)",
+     "SF"
+    ],
+    [
+     "Kadiatou (ICQA)",
+     "R32"
+    ],
+    [
+     "Anhar (STOW)",
+     "R32"
+    ],
+    [
+     "Nathanael (FPICK)",
+     "R16"
+    ],
+    [
+     "Oumou (ICQA)",
+     "R1"
+    ],
+    [
+     "Kevin (AFM)",
+     "QF"
+    ],
+    [
+     "Aref (ICQA)",
+     "R1"
+    ],
+    [
+     "Desire (ICQA)",
+     "R32"
+    ],
+    [
+     "Yero (STOW)",
+     "R16"
+    ],
+    [
+     "Michel (STOW)",
+     "R1"
+    ],
+    [
+     "Ruddy (ICQA)",
+     "R32"
+    ],
+    [
+     "Farid (ICQA)",
+     "R32"
+    ],
+    [
+     "Camille (P2R)",
+     "R1"
+    ],
+    [
+     "Celine (FPICK)",
+     "R16"
+    ],
+    [
+     "Fouzia (ICQA)",
+     "R1"
+    ],
+    [
+     "Emmanuel (STOW)",
+     "R32"
+    ],
+    [
+     "Romain (STOW)",
+     "R1"
+    ],
+    [
+     "Francis (PICK)",
+     "QF"
+    ],
+    [
+     "Cedric (PICK)",
+     "R16"
+    ],
+    [
+     "Irham (STOW)",
+     "R1"
+    ],
+    [
+     "Cyril (AFE)",
+     "R32"
+    ],
+    [
+     "Arnaud (AFM)",
+     "R1"
+    ],
+    [
+     "Yann (PICK)",
+     "V"
+    ],
+    [
+     "Brian (AFM)",
+     "R16"
+    ],
+    [
+     "Angel (ICQA)",
+     "R32"
+    ],
+    [
+     "Ludgy (PICK-MVX)",
+     "R1"
+    ],
+    [
+     "Jessica (ICQA)",
+     "R1"
+    ],
+    [
+     "Didier (STOW)",
+     "F"
+    ],
+    [
+     "Hicham (ICQA)",
+     "R1"
+    ],
+    [
+     "Augustin (FPICK)",
+     "R32"
+    ],
+    [
+     "Yanis (P2R)",
+     "R1"
+    ],
+    [
+     "Hugues (STOW)",
+     "R16"
+    ],
+    [
+     "Serge (PICK)",
+     "R1"
+    ],
+    [
+     "Sofiane (STOW)",
+     "R32"
+    ],
+    [
+     "Martin (STOW)",
+     "R1"
+    ],
+    [
+     "Claudia (ICQA)",
+     "R32"
+    ],
+    [
+     "Malik (PICK)",
+     "R1"
+    ],
+    [
+     "Oyunbat (P2R)",
+     "R1"
+    ],
+    [
+     "Erwan (AFM)",
+     "QF"
+    ],
+    [
+     "Cassandra (ICQA)",
+     "R1"
+    ],
+    [
+     "Marie (PK-SN)",
+     "R32"
+    ],
+    [
+     "William (PICK)",
+     "R16"
+    ],
+    [
+     "Sonia (STOW)",
+     "SF"
+    ],
+    [
+     "Umberto (PK-SN)",
+     "R1"
+    ],
+    [
+     "Sukir (P2R)",
+     "R1"
+    ]
+   ]
+  }
+ ]
+}
