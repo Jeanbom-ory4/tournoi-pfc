@@ -289,7 +289,7 @@ function classementView(){
   const my=S.cfg&&me()?raw(me()):null,medal=['🥇','🥈','🥉'];
   const show=clAll?c.rows:c.rows.slice(0,10);
   const row=x=>`<div class="flex items-center justify-between gap-2 px-2 py-1.5 rounded ${x.n===my?'ring-1 ring-yellow-300 bg-white/10':''}"><span class="flex items-center min-w-0"><span style="min-width:2.6rem" class="opacity-90 text-sm">${x.r<=3?medal[x.r-1]:x.r+(x.tie?'':'.')}${x.tie?'<span class="opacity-70">=</span>':''}</span><span class="truncate font-semibold">${esc(x.n)}</span></span><b>${x.p} pts</b></div>`;
-  const bl=Object.entries(CL.bareme).filter(([k])=>c.tn.some(t=>t.type===k)).map(([k,b])=>`<p class="mt-2"><b>${esc(b.label)}</b> : vainqueur ${b.V} · finaliste ${b.F} · 3e ${b['3']} · 4e ${b['4']} · quart de finale ${b.QF} · huitième ${b.R16} · seizième ${b.R32} · premier tour ${b.R1}</p>`).join('');
+  const bl=Object.entries(CL.bareme).filter(([k])=>c.tn.some(t=>t.type===k)).map(([k,b])=>`<p class="mt-2"><b>${esc(b.label)}</b> : vainqueur ${b.V} · finaliste ${b.F} · ${(c.tn.filter(t=>t.type===k).every(t=>t.pf===false))?'demi-finale '+b.SF:'3e '+b['3']+' · 4e '+b['4']} · quart de finale ${b.QF} · huitième ${b.R16} · seizième ${b.R32} · premier tour ${b.R1}</p>`).join('');
   return `<details ${aboutOpen.rank?'open':''} ontoggle="aboutOpen.rank=this.open" class="rounded-xl bg-white/10 p-3 mb-3"><summary class="font-bold cursor-pointer">🏅 Classement annuel</summary>
     <p class="mt-3 mb-2 text-sm opacity-90">Les résultats de tous nos tournois rapportent des points, comme sur le circuit de tennis. Seuls les 12 derniers mois comptent.</p>
     <div class="mb-2">${show.map(row).join('')}</div>
