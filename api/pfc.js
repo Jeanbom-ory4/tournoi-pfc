@@ -26,6 +26,7 @@ function dueFrom(from, ms) {
 const MAX_TRIES = Number(process.env.MAX_TRIES) || 7;                  // mauvais codes avant blocage
 const LOCK = (Number(process.env.LOCK_MINUTES) || 3) * 60e3;           // durée du blocage d'un joueur
 const lockKey = (cfg, id) => 'pfc:lock:' + (cfg.tid || '') + ':' + id;
+const helpKey = (cfg, id) => 'pfc:help:' + (cfg.tid || '') + ':' + id;   // « appel à l'aide » d'un joueur qui a perdu son code (expire seul après 7 jours)
 const hrs = (ms) => Math.round(ms / 3600e3 * 100) / 100;
 const mk = (r, i) => `m${r}_${i}`;
 const hash = (s) => crypto.createHash('sha256').update(s + SECRET).digest('hex');
@@ -117,7 +118,7 @@ const PZX = { second: { key: pzKey2, ui: PZ2_UI }, third: { key: pzKey3, ui: PZ3
 const admPz = async (cfg, role) => { const X = PZX[role], p = await redis.get(X.key(cfg)), o = p && X.ui.opts.find((x) => x.k === p.choice); return p ? { ...p, label: o ? o.admin : '' } : null; };
 async function wipe() {
   const cfg = await redis.get('pfc:cfg');
-  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), redis.del(svKey(cfg)), redis.del(pzKey(cfg)), redis.del(pzKey2(cfg)), redis.del(pzKey3(cfg))]);   // matchs, présence et sondage
+  if (cfg) await Promise.all([...ids(cfg).map((i) => redis.del('pfc:m:' + i)), ...cfg.players.map((p) => redis.del(seenKey(cfg, p.id))), ...cfg.players.map((p) => redis.del(helpKey(cfg, p.id))), redis.del(svKey(cfg)), redis.del(pzKey(cfg)), redis.del(pzKey2(cfg)), redis.del(pzKey3(cfg))]);   // matchs, présence et sondage
   await redis.del('pfc:cfg', 'pfc:pins', 'pfc:emails'); // 'pfc:emails' : nettoyage d'anciennes données
 }
 // Termine un match : désigne le vainqueur (ff = joueur éliminé pour dépassement de délai) et le fait avancer
@@ -205,8 +206,34 @@ module.exports = async (req, res) => {
         await redis.set(lk, st, { ex });
         return res.status(401).json({ error: 'pin', left: MAX_TRIES - st.n });
       }
-      await redis.del(lk); // bon code : le compteur d'essais est remis à zéro
+      await Promise.all([redis.del(lk), redis.del(helpKey(cfg, p.id))]); // bon code : le compteur d'essais est remis à zéro et l'éventuel appel à l'aide est effacé
       return res.json({ token: sign(p.id, cfg.tid || '') });
+    }
+    if (a === 'help') {   // « J'ai perdu mon code » : prévient l'organisateur (visible dans Orga) ; ne change rien d'autre
+      const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
+      if (!p) return res.status(400).json({ error: 'joueur' });
+      const hk = helpKey(cfg, p.id);
+      if (!(await redis.get(hk))) await redis.set(hk, Date.now(), { ex: 7 * 86400 });
+      return res.json({ ok: 1 });
+    }
+
+    if (a === 'changepin') {   // le joueur connecté choisit son propre code (il doit fournir l'actuel) ; l'organisateur ne le voit plus (il peut toujours en générer un nouveau)
+      const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || ''), p = me && cfg.players.find((x) => x.id === me);
+      if (!p) return res.status(401).json({ error: 'auth' });
+      const np = String(b.newpin || '').toUpperCase();
+      if (!/^[A-Z0-9]{4}$/.test(np)) return res.status(400).json({ error: 'format' });
+      const lk = lockKey(cfg, p.id), st = (await redis.get(lk)) || { n: 0, until: 0 }, ex = Math.ceil(LOCK / 1000) + 1800;
+      if (st.until > Date.now()) return res.status(429).json({ error: 'locked', retry: Math.ceil((st.until - Date.now()) / 1000) });
+      if (hash(String(b.pin || '').toUpperCase() + p.id) !== p.h) {
+        st.n = (st.n || 0) + 1;
+        if (st.n >= MAX_TRIES) { st.until = Date.now() + LOCK; st.n = 0; await redis.set(lk, st, { ex }); return res.status(429).json({ error: 'locked', retry: Math.ceil(LOCK / 1000) }); }
+        await redis.set(lk, st, { ex });
+        return res.status(401).json({ error: 'pin', left: MAX_TRIES - st.n });
+      }
+      const pins = (await redis.get('pfc:pins')) || {};
+      p.h = hash(np + p.id); pins[p.id] = '';   // '' : code choisi par le joueur (non visible dans Orga)
+      await Promise.all([redis.set('pfc:cfg', cfg), redis.set('pfc:pins', pins), redis.del(lk), redis.del(helpKey(cfg, p.id))]);
+      return res.json({ ok: 1 });
     }
 
     if (a === 'quit') {   // abandon volontaire : le joueur est éliminé, son adversaire passe au tour suivant
@@ -293,7 +320,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'reorder'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'newpin', 'reorder'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -350,6 +377,16 @@ module.exports = async (req, res) => {
         await redis.set('pfc:cfg', cfg);
         return res.json({ ok: 1 });
       }
+      if (a === 'newpin') {   // nouveau code secret pour un joueur (même tournoi lancé) : l'ancien code ne permet plus de se reconnecter ; les matchs ne changent pas
+        const cfg = await redis.get('pfc:cfg');
+        if (!cfg) return res.status(400).json({ error: 'tournoi' });
+        const p = cfg.players.find((x) => x.id === b.id);
+        if (!p) return res.status(400).json({ error: 'joueur' });
+        const pin = newPin(), pins = (await redis.get('pfc:pins')) || {};
+        p.h = hash(pin + p.id); pins[p.id] = pin;
+        await Promise.all([redis.set('pfc:cfg', cfg), redis.set('pfc:pins', pins), redis.del(lockKey(cfg, p.id)), redis.del(helpKey(cfg, p.id))]);
+        return res.json({ ok: 1 });
+      }
       if (a === 'removeplayer') {
         const cfg = await redis.get('pfc:cfg');
         if (!cfg) return res.status(400).json({ error: 'tournoi' });
@@ -399,7 +436,9 @@ module.exports = async (req, res) => {
       if (a === 'admin') {
         const cfg = await redis.get('pfc:cfg'), locks = {};
         if (cfg) for (const p of cfg.players) { const st = await redis.get(lockKey(cfg, p.id)); if (st && st.until > Date.now()) locks[p.id] = st.until; }
-        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, survey: cfg ? await svResults(cfg) : null, prize: cfg ? await (async () => { const p = await redis.get(pzKey(cfg)); return p ? { ...p, label: PZ_UI[p.choice] ? PZ_UI[p.choice].admin : '' } : null; })() : null,
+        const hv = cfg ? await redis.mget(...cfg.players.map((p) => helpKey(cfg, p.id))) : [], help = {};
+        if (cfg) cfg.players.forEach((p, i) => { if (hv[i]) help[p.id] = hv[i]; });
+        return res.json({ pins: (await redis.get('pfc:pins')) || {}, locks, help, survey: cfg ? await svResults(cfg) : null, prize: cfg ? await (async () => { const p = await redis.get(pzKey(cfg)); return p ? { ...p, label: PZ_UI[p.choice] ? PZ_UI[p.choice].admin : '' } : null; })() : null,
           prizes: cfg ? { second: await admPz(cfg, 'second'), third: await admPz(cfg, 'third') } : null });
       }
       if (a === 'reset') { await wipe(); return res.json({ ok: 1 }); }
