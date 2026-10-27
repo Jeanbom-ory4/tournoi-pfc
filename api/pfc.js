@@ -341,13 +341,12 @@ module.exports = async (req, res) => {
       if (a === 'renameplayer') {
         const cfg = await redis.get('pfc:cfg');
         if (!cfg) return res.status(400).json({ error: 'tournoi' });
-        if (cfg.started !== false) return res.status(409).json({ error: 'started' });
-        const p = cfg.players.find((x) => x.id === b.id);
+        const p = cfg.players.find((x) => x.id === b.id);   // modifiable à tout moment, même tournoi lancé (remplaçant d'un joueur absent)
         if (!p) return res.status(400).json({ error: 'joueur' });
         const name = String(b.name || '').replace(/\s+/g, ' ').trim().slice(0, 60);
         if (!name) return res.status(400).json({ error: 'vide' });
         if (cfg.players.some((x) => x.id !== p.id && x.name.trim().toLowerCase() === name.toLowerCase())) return res.status(400).json({ error: 'doublon' });
-        p.name = name; // l'identifiant, le code et le tirage au sort ne changent pas
+        p.name = name; // l'identifiant, le code, les matchs et le tirage au sort ne changent pas
         await redis.set('pfc:cfg', cfg);
         return res.json({ ok: 1 });
       }
