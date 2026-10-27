@@ -355,7 +355,7 @@ function jeuView0(){
   if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
   const id=me(),when=S.cfg.started===false&&S.cfg.startAt?fmtWhen(S.cfg.startAt):'';
   if(!id)return (when?wrap('<p class="text-center font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>'):'')+loginView();
-  let head=`<div class="flex justify-between items-center mb-3"><span class="font-bold">👋 ${pn(id)}</span><span><button onclick="changePin()" class="text-sm underline opacity-80 mr-3">Mon code</button><button onclick="logout()" class="text-sm underline opacity-80">Changer de joueur</button></span></div>`;
+  let head=`<div class="mb-3" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.4rem 1rem"><span class="font-bold">👋 ${pn(id)}</span><span style="margin-left:auto;display:flex;gap:1rem;white-space:nowrap"><button onclick="changePin()" class="text-sm underline opacity-80">Changer mon code</button><button onclick="logout()" class="text-sm underline opacity-80">Changer de joueur</button></span></div>`;
   if(window.Notification&&Notification.permission==='default')head+=`<button onclick="askNotif()" class="w-full mb-3 py-2 rounded-xl card text-sm font-bold">🔔 Activer les alertes</button>`;
   if(S.cfg.started===false)return wrap(head+'<p class="text-center text-4xl">🚦</p><p class="text-center font-bold mt-2">Le tournoi n\'a pas encore commencé.</p><p class="text-center mt-2 text-sm">L\'organisateur donnera bientôt le coup d\'envoi. Reviens un peu plus tard !</p>'+(when?'<p class="text-center mt-3 font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>':''));
   const m=myMatch();
