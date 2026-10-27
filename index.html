@@ -289,7 +289,9 @@ function classementView(){
   const my=S.cfg&&me()?raw(me()):null,medal=['🥇','🥈','🥉'];
   const show=clAll?c.rows:c.rows.slice(0,10);
   const row=x=>`<div class="flex items-center justify-between gap-2 px-2 py-1.5 rounded ${x.n===my?'ring-1 ring-yellow-300 bg-white/10':''}"><span class="flex items-center min-w-0"><span style="min-width:2.6rem" class="opacity-90 text-sm">${x.r<=3?medal[x.r-1]:x.r+(x.tie?'':'.')}${x.tie?'<span class="opacity-70">=</span>':''}</span><span class="truncate font-semibold">${esc(x.n)}</span></span><b>${x.p} pts</b></div>`;
-  const bl=Object.entries(CL.bareme).filter(([k])=>c.tn.some(t=>t.type===k)).map(([k,b])=>`<p class="mt-2"><b>${esc(b.label)}</b> : vainqueur ${b.V} · finaliste ${b.F} · ${(c.tn.filter(t=>t.type===k).every(t=>t.pf===false))?'demi-finale '+b.SF:'3e '+b['3']+' · 4e '+b['4']} · quart de finale ${b.QF} · huitième ${b.R16} · seizième ${b.R32} · premier tour ${b.R1}</p>`).join('');
+  const line=(lab,b,noPF)=>`<p class="mt-2"><b>${lab}</b> : vainqueur ${b.V} · finaliste ${b.F} · ${noPF?'demi-finale '+b.SF:'3e '+b['3']+' · 4e '+b['4']} · quart de finale ${b.QF} · huitième ${b.R16} · seizième ${b.R32} · premier tour ${b.R1}</p>`;
+  const ec=CL.enCours&&CL.bareme[CL.enCours.type];
+  const bl=Object.entries(CL.bareme).filter(([k])=>c.tn.some(t=>t.type===k)).map(([k,b])=>line(esc(b.label),b,c.tn.filter(t=>t.type===k).every(t=>t.pf===false))).join('')+(ec?line(esc(ec.label)+' ('+esc(CL.enCours.nom)+', en cours)',ec,CL.enCours.pf===false):'');
   return `<details ${aboutOpen.rank?'open':''} ontoggle="aboutOpen.rank=this.open" class="rounded-xl bg-white/10 p-3 mb-3"><summary class="font-bold cursor-pointer">🏅 Classement annuel</summary>
     <p class="mt-3 mb-2 text-sm opacity-90">Les résultats de tous nos tournois rapportent des points, comme sur le circuit de tennis. Seuls les 12 derniers mois comptent.</p>
     <div class="mb-2">${show.map(row).join('')}</div>
@@ -1025,7 +1027,7 @@ function adminView(){
     <textarea id="names" rows="8" class="w-full rounded-xl p-3 text-slate-900" placeholder="Alice&#10;Bruno&#10;Chloé&#10;David"></textarea>
     <button onclick="createT()" class="w-full mt-3 py-4 rounded-2xl bg-yellow-300 text-yellow-950 font-black">Générer le tournoi 🚀</button>`);
   let h=startCard()+wrap(`<p class="font-bold mb-2">Accès pour les collègues</p><div class="flex justify-center my-3"><div id="qr" class="bg-white p-3 rounded-xl"></div></div><p class="text-xs text-center break-all opacity-90">${esc(location.origin+location.pathname)}</p>`);
-  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)} <button onclick="renameP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Modifier</button>${S.cfg.started===false?`<button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
+  if(adm)h+=wrap(`<p class="font-bold mb-2">Codes d'accès à distribuer</p><div class="text-sm">${S.cfg.players.slice().sort((x,y)=>x.name.localeCompare(y.name,'fr',{sensitivity:'base',numeric:true})).map(p=>{const lk=(adm.locks||{})[p.id],lockOn=lk&&lk>now();return `<div class="py-1 border-b border-white/20"><div class="flex justify-between"><span>${esc(p.name)} <button onclick="renameP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Modifier</button><button onclick="newPinP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Nouveau code</button>${S.cfg.started===false?`<button onclick="removeP('${p.id}')" class="ml-1 px-2 py-0.5 rounded-lg bg-white/20 text-xs font-bold">Effacer</button>`:''}</span><b class="tracking-widest">${esc(adm.pins[p.id]||'—')}</b></div>${lockOn?`<div class="flex justify-between items-center text-xs text-yellow-200 mt-1"><span>🔒 Bloqué encore ~${Math.max(1,Math.ceil((lk-now())/60000))} min</span><button onclick="unlock('${p.id}')" class="px-2 py-1 rounded-lg bg-white/20 font-bold text-white">Débloquer</button></div>`:''}</div>`}).join('')}</div>`);
   const act=Object.entries(S.matches).filter(([k,m])=>!m.w&&m.a&&m.b);
   const bt=(l,c,key,okTxt)=>{const st=admSt.key===key?admSt.s:'';return `<button ${st?'disabled':''} onclick="${c}" class="px-2 py-1 rounded-lg text-xs font-bold active:scale-95 transition ${st==='ok'?'':'bg-white/20'}" ${st==='ok'?'style="background:#d6efe0;color:#1d4d35"':st==='busy'?'style="opacity:.6"':''}>${st==='ok'?'✓ '+okTxt:st==='busy'?'…':l}</button>`};
   h+=wrap(`<p class="font-bold mb-2">⏳ Matchs en cours</p>${act.length?act.map(([k,m])=>{
@@ -1054,6 +1056,12 @@ async function renameP(id){
   try{await api('renameplayer',{id,name:v});S=await loadState();adm=await api('admin')}
   catch(e){alert(e.message==='doublon'?'Ce nom existe déjà dans la liste.':e.message==='vide'?'Le nom ne peut pas être vide.':'Erreur : '+e.message)}
   lastSig='';render();
+}
+async function newPinP(id){
+  const p=S.cfg.players.find(x=>x.id===id);if(!p)return;
+  if(!confirm('Générer un nouveau code secret pour '+p.name+' ?\nL\'ancien code ne permettra plus de se reconnecter (ses matchs ne changent pas).'))return;
+  try{await api('newpin',{id});adm=await api('admin');lastSig='';render();alert('Nouveau code de '+p.name+' : '+(adm.pins[id]||'?'))}
+  catch(e){alert('Erreur : '+e.message)}
 }
 async function removeP(id){
   const p=S.cfg.players.find(x=>x.id===id);if(!p)return;

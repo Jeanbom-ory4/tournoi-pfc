@@ -232,5 +232,10 @@
    ],
    "pf": false
   }
- ]
+ ],
+ "enCours": {
+  "nom": "Pierre-Feuille-Ciseaux",
+  "type": "p250",
+  "pf": true
+ }
 }
