@@ -344,7 +344,7 @@ function softScroll(to){
   const from=window.scrollY,max=document.documentElement.scrollHeight-window.innerHeight,dest=Math.min(to,max),d=dest-from;
   if(Math.abs(d)<4)return;
   if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){window.scrollTo(0,dest);return}
-  const dur=Math.min(4500,Math.max(2000,Math.abs(d)*3.6)),t0=performance.now();   // lent : environ 3 s pour 800 px
+  const dur=Math.min(3600,Math.max(1600,Math.abs(d)*2.9)),t0=performance.now();   // lent : environ 3 s pour 800 px
   const ease=t=>-(Math.cos(Math.PI*t)-1)/2;   // sinus : montée et descente de vitesse très progressives
   const stop=()=>{cancelAnimationFrame(softRaf);['wheel','touchstart','keydown','mousedown'].forEach(e=>window.removeEventListener(e,stop))};
   ['wheel','touchstart','keydown','mousedown'].forEach(e=>window.addEventListener(e,stop,{passive:true}));
