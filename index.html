@@ -344,8 +344,8 @@ function softScroll(to){
   const from=window.scrollY,max=document.documentElement.scrollHeight-window.innerHeight,dest=Math.min(to,max),d=dest-from;
   if(Math.abs(d)<4)return;
   if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){window.scrollTo(0,dest);return}
-  const dur=Math.min(1800,Math.max(900,Math.abs(d)*1.6)),t0=performance.now();
-  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;   // cubique : départ et arrivée en douceur
+  const dur=Math.min(4500,Math.max(2000,Math.abs(d)*3.6)),t0=performance.now();   // lent : environ 3 s pour 800 px
+  const ease=t=>-(Math.cos(Math.PI*t)-1)/2;   // sinus : montée et descente de vitesse très progressives
   const stop=()=>{cancelAnimationFrame(softRaf);['wheel','touchstart','keydown','mousedown'].forEach(e=>window.removeEventListener(e,stop))};
   ['wheel','touchstart','keydown','mousedown'].forEach(e=>window.addEventListener(e,stop,{passive:true}));
   const step=now=>{const k=Math.min(1,(now-t0)/dur);window.scrollTo(0,from+d*ease(k));if(k<1)softRaf=requestAnimationFrame(step);else stop()};
