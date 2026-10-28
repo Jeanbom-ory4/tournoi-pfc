@@ -217,25 +217,6 @@ module.exports = async (req, res) => {
       return res.json({ ok: 1 });
     }
 
-    if (a === 'changepin') {   // le joueur connecté choisit son propre code (il doit fournir l'actuel) ; l'organisateur ne le voit plus (il peut toujours en générer un nouveau)
-      const cfg = await redis.get('pfc:cfg'), me = cfg && who(b.token, cfg.tid || ''), p = me && cfg.players.find((x) => x.id === me);
-      if (!p) return res.status(401).json({ error: 'auth' });
-      const np = String(b.newpin || '').toUpperCase();
-      if (!/^[A-Z0-9]{4}$/.test(np)) return res.status(400).json({ error: 'format' });
-      const lk = lockKey(cfg, p.id), st = (await redis.get(lk)) || { n: 0, until: 0 }, ex = Math.ceil(LOCK / 1000) + 1800;
-      if (st.until > Date.now()) return res.status(429).json({ error: 'locked', retry: Math.ceil((st.until - Date.now()) / 1000) });
-      if (hash(String(b.pin || '').toUpperCase() + p.id) !== p.h) {
-        st.n = (st.n || 0) + 1;
-        if (st.n >= MAX_TRIES) { st.until = Date.now() + LOCK; st.n = 0; await redis.set(lk, st, { ex }); return res.status(429).json({ error: 'locked', retry: Math.ceil(LOCK / 1000) }); }
-        await redis.set(lk, st, { ex });
-        return res.status(401).json({ error: 'pin', left: MAX_TRIES - st.n });
-      }
-      const pins = (await redis.get('pfc:pins')) || {};
-      p.h = hash(np + p.id); pins[p.id] = '';   // '' : code choisi par le joueur (non visible dans Orga)
-      await Promise.all([redis.set('pfc:cfg', cfg), redis.set('pfc:pins', pins), redis.del(lk), redis.del(helpKey(cfg, p.id))]);
-      return res.json({ ok: 1 });
-    }
-
     if (a === 'quit') {   // abandon volontaire : le joueur est éliminé, son adversaire passe au tour suivant
       const c0 = await redis.get('pfc:cfg'), me = c0 && who(b.token, c0.tid);
       if (!me || !c0.players.some((p) => p.id === me)) return res.status(401).json({ error: 'auth' });
