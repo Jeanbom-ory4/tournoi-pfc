@@ -333,9 +333,23 @@ function render(){
   champCheck();
   if(tab==='jeu'&&jeuScroll){   // à chaque arrivée sur « Jouer » : la page descend d'elle-même jusqu'à la liste des tours joués (les 3 derniers tours arrivent en haut de l'écran) (une seule fois ; le joueur peut ensuite défiler librement)
     jeuScroll=false;const el=$('#histHead')||$('#lastTurn');
-    if(el)requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+window.scrollY-12),behavior:'smooth'})));
+    if(el)setTimeout(()=>softScroll(Math.max(0,el.getBoundingClientRect().top+window.scrollY-12)),350);   // petite pause, puis descente douce
   }
   requestAnimationFrame(hintUpdate);
+}
+// Défilement doux : accélère puis ralentit progressivement (durée selon la distance) ; s'arrête dès que le joueur touche l'écran ou défile lui-même
+let softRaf=0;
+function softScroll(to){
+  cancelAnimationFrame(softRaf);
+  const from=window.scrollY,max=document.documentElement.scrollHeight-window.innerHeight,dest=Math.min(to,max),d=dest-from;
+  if(Math.abs(d)<4)return;
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){window.scrollTo(0,dest);return}
+  const dur=Math.min(1800,Math.max(900,Math.abs(d)*1.6)),t0=performance.now();
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;   // cubique : départ et arrivée en douceur
+  const stop=()=>{cancelAnimationFrame(softRaf);['wheel','touchstart','keydown','mousedown'].forEach(e=>window.removeEventListener(e,stop))};
+  ['wheel','touchstart','keydown','mousedown'].forEach(e=>window.addEventListener(e,stop,{passive:true}));
+  const step=now=>{const k=Math.min(1,(now-t0)/dur);window.scrollTo(0,from+d*ease(k));if(k<1)softRaf=requestAnimationFrame(step);else stop()};
+  softRaf=requestAnimationFrame(step);
 }
 function setTab(t){const was=tab;tab=t;if(t==='jeu')jeuScroll=true;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
 
