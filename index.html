@@ -82,6 +82,16 @@ filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 .hr.wa{--h1:radial-gradient(ellipse 48% 130% at 22% 50%,rgba(80,215,125,.40),transparent 80%);--h2:radial-gradient(ellipse 48% 130% at 78% 50%,rgba(235,90,90,.36),transparent 80%)}
 .hr.wb{--h1:radial-gradient(ellipse 48% 130% at 22% 50%,rgba(235,90,90,.36),transparent 80%);--h2:radial-gradient(ellipse 48% 130% at 78% 50%,rgba(80,215,125,.40),transparent 80%)}
 .hr.tt{--h1:radial-gradient(ellipse 85% 140% at 50% 50%,rgba(210,210,220,.24),transparent 85%)}
+/* symboles « vivants » du dernier tour joué : Pierre saute, Feuille ondule, Ciseaux s'ouvrent et se ferment */
+.hop{animation:hopy 1.3s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes hopy{0%,55%,100%{transform:translateY(0) scale(1,1)}10%{transform:translateY(0) scale(1.08,.9)}30%{transform:translateY(-7px) scale(.96,1.05)}45%{transform:translateY(0) scale(1.06,.93)}}
+.wav{animation:wavy 1.9s ease-in-out infinite;transform-origin:50% 92%}
+@keyframes wavy{0%,100%{transform:rotate(-7deg) skewX(5deg)}50%{transform:rotate(7deg) skewX(-5deg)}}
+.snA,.snB{animation:snip 1.4s ease-in-out infinite;transform-origin:24px 21px}
+.snB{animation-name:snipb}
+@keyframes snip{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(11deg)}}
+@keyframes snipb{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-11deg)}}
+@media (prefers-reduced-motion:reduce){.hop,.wav,.snA,.snB{animation:none}}
 .hg.one{grid-template-columns:1fr;gap:8px}
 .hg.one .hr{display:grid;grid-template-columns:1fr 5.5rem 1fr;align-items:center;padding:8px 0;position:relative}
 .hg.one .hn{position:absolute;left:12px;top:50%;transform:translateY(-50%)}
@@ -395,7 +405,7 @@ function jeuView0(){
     const pk=m.id+'|'+m.hist.length,pc=popKey===pk?'':' pop';popKey=pk;   // l'animation ne se joue qu'à la révélation, pas à chaque clic sur un symbole
     last=`<div class="mt-4 rounded-2xl rv ${r[1]} text-center${pc}"><div class="rv-l">Dernier tour révélé</div><div class="rv-v">${E[h[side]]} <b>VS</b> ${E[h[o]]}</div><div class="rv-t">${r[0]}</div></div>
     <div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div><div style="display:grid;grid-template-columns:1fr 5.5rem 1fr" class="text-xs font-bold opacity-90 text-center mb-1"><span>Toi</span><span></span><span class="truncate">${pn(m[o])||'Adversaire'}</span></div>
-    <div class="hg one" style="margin-top:0">${m.hist.map((x,i)=>[x,i]).reverse().map(([x,i])=>{const cls=x.w==='='?'tt':x.w===side?'wa':'wb',g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr ${cls}"><span class="hn">${i+1}.</span><span class="c">${g(x[side])}</span><i>vs</i><span class="c">${g(x[o])}</span></div>`}).join('')}</div></div>`;
+    <div class="hg one" style="margin-top:0">${m.hist.map((x,i)=>[x,i]).reverse().map(([x,i])=>{const cls=x.w==='='?'tt':x.w===side?'wa':'wb',top=i===m.hist.length-1;return `<div class="hr ${cls}"><span class="hn">${i+1}.</span><span class="c">${sym(x[side],top,0)}</span><i>vs</i><span class="c">${sym(x[o],top,.5)}</span></div>`}).join('')}</div></div>`;
   }
   const vis=`<div class="text-center mt-5"><label class="inline-flex items-center gap-2 text-sm opacity-90"><input type="checkbox" ${hid?'checked':''} onchange="toggleHid()" class="w-5 h-5"> Apparaître hors ligne</label></div>`;
   return wrap(head+score+status+act+last+vis);
@@ -939,6 +949,13 @@ function bracketView(){
   const bigBtn=window.innerWidth>=768?`<div class="text-center mb-2"><button onclick="bigBoard=!bigBoard;render()" class="px-3 py-1.5 rounded-xl card text-xs font-bold">${bigBoard?'↙ Vue réduite':'⛶ Tableau complet'}</button></div>`:'';
   return out+bigBtn+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto" ${bigBoard&&window.innerWidth>=768?`style="width:calc(100vw - 48px);margin-left:calc(50% - 50vw + 24px)"`:''}><div class="flex gap-6 pb-1" style="margin:0 auto;width:max-content">${cols.join('')}</div></div>`;
 }
+// Symbole de l'historique ; sur la ligne la plus récente (anim), il est animé
+function sym(v,anim,dl){
+  const st=anim?`style="animation-delay:-${dl||0}s"`:'';
+  if(!anim)return `<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;
+  if(v==='c')return `<svg viewBox="0 0 40 40" fill="none" stroke="url(#gold)" stroke-linecap="round"><g class="snA" ${st}><path d="M16 5L29 31" stroke-width="4"/><circle cx="32" cy="33" r="5" stroke-width="3"/></g><g class="snB" ${st}><path d="M32 5L19 31" stroke-width="4"/><circle cx="16" cy="33" r="5" stroke-width="3"/></g></svg>`;
+  return `<svg viewBox="0 0 40 40" class="${v==='r'?'hop':'wav'}" ${st}><use href="#g-${v}"/></svg>`;
+}
 function openMatch(k){watch=k;render();window.scrollTo(0,0)}
 function matchView(k){
   const m=S.matches[k],back=`<button onclick="watch=null;render()" class="mb-3 px-3 py-2 rounded-xl card text-sm font-bold">← Retour au tableau</button>`;
@@ -947,7 +964,7 @@ function matchView(k){
   const st=m.w?`<div class="mt-3 p-3 rounded-2xl won-bg text-center font-bold" style="box-shadow:0 6px 16px rgba(0,0,0,.35);color:#0b1f13">🏁 Vainqueur : ${pn(m.w)||'—'}${m.ff?`<div class="text-base font-semibold mt-1">${m.ab===m.ff?'🏳️ '+pn(m.ff)+' a abandonné':'⏱ '+pn(m.ff)+' éliminé(e) : délai dépassé'}</div>`:''}</div>`
     :m.pend?`<div class="mt-3 p-3 rounded-2xl bg-yellow-400 text-yellow-950 text-center font-bold">🔒 ${pl} a joué son coup (secret). En attente de ${wt}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`
     :`<div class="mt-3 p-3 rounded-2xl card text-center">${m.a&&m.b?'Prochain tour à jouer…':'Match pas encore défini'}</div>`;
-  const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>[x,i]).reverse().map(([x,i])=>{const g=v=>`<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;return `<div class="hr ${x.w==='='?'tt':x.w==='a'?'wa':'wb'}"><span class="hn">${i+1}.</span><span class="c">${g(x.a)}</span><i>vs</i><span class="c">${g(x.b)}</span></div>`}).join('')}</div>`:'';
+  const hist=(m.hist||[]).length?`<div class="hg one">${m.hist.map((x,i)=>[x,i]).reverse().map(([x,i])=>{const top=i===m.hist.length-1;return `<div class="hr ${x.w==='='?'tt':x.w==='a'?'wa':'wb'}"><span class="hn">${i+1}.</span><span class="c">${sym(x.a,top,0)}</span><i>vs</i><span class="c">${sym(x.b,top,.5)}</span></div>`}).join('')}</div>`:'';
   return back+wrap(`<div class="text-center text-sm opacity-80">${mlabel(m)} · premier à ${m.need||3} victoires</div>
     <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A,m.a&&!m.w?fl(m.a):'')}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-center" style="min-width:5.5rem">${mpScore(`${m.sa} - ${m.sb}`,"text-4xl font-black",mpOf(m).a,mpOf(m).b,"s|"+m.id+"|")}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B,m.b&&!m.w?fl(m.b):'')}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${mpNote(m,'sn|'+m.id)}${st}
     ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
