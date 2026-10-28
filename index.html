@@ -161,7 +161,7 @@ const E={r:STONE,f:'📄',c:'✂️'},N={r:'Pierre',f:'Feuille',c:'Ciseaux'};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',popKey='',bigBoard=false,skew=0,watch=null,confSig='',confRaf=null,aboutOpen={rules:true,hist:false,rank:true},souv=false,CL=null,clAll=false;   // souv : mode « souvenir » (tableau figé lu dans souvenir.json, aucun appel au serveur)
+let S={cfg:null,matches:{}},tok=ls.get('pfc_tok'),adminKey=ls.get('pfc_ak')||'',adm=null,tab='jeu',sel=null,lg={id:null,pin:'',err:false},remember=true,busy=false,prevTurn=null,loaded=false,confirmReset=false,loadErr=null,lastSig='',popKey='',bigBoard=false,skew=0,watch=null,confSig='',confRaf=null,aboutOpen={rules:true,hist:false,rank:true},souv=false,CL=null,clAll=false,jeuScroll=true;   // souv : mode « souvenir » (tableau figé lu dans souvenir.json, aucun appel au serveur)
 $('#ttl').innerHTML='<div>'+STONE+' 📄 ✂️</div><div class="text-lg mt-1">Master Chifoumi — Édition RSP 2026</div>';
 
 async function api(action,extra){
@@ -331,9 +331,13 @@ function render(){
   introCheck();
   winCheck();
   champCheck();
+  if(tab==='jeu'&&jeuScroll){   // à chaque arrivée sur « Jouer » : la page descend d'elle-même jusqu'à la liste des tours joués (les 3 derniers tours arrivent en haut de l'écran) (une seule fois ; le joueur peut ensuite défiler librement)
+    jeuScroll=false;const el=$('#histHead')||$('#lastTurn');
+    if(el)requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+window.scrollY-12),behavior:'smooth'})));
+  }
   requestAnimationFrame(hintUpdate);
 }
-function setTab(t){const was=tab;tab=t;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
+function setTab(t){const was=tab;tab=t;if(t==='jeu')jeuScroll=true;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
 
 /* ---------- Joueur ---------- */
 function myMatch(){
@@ -403,8 +407,8 @@ function jeuView0(){
   if(m.hist&&m.hist.length){
     const h=m.hist[m.hist.length-1],r=h.w==='='?['🤝 Égalité, on rejoue','tie-bg']:h.w===side?['🎉 Tour gagné !','won-bg']:['🤦‍♂️ Tour perdu','lost-bg'];
     const pk=m.id+'|'+m.hist.length,pc=popKey===pk?'':' pop';popKey=pk;   // l'animation ne se joue qu'à la révélation, pas à chaque clic sur un symbole
-    last=`<div class="mt-4 rounded-2xl rv ${r[1]} text-center${pc}"><div class="rv-l">Dernier tour révélé</div><div class="rv-v">${E[h[side]]} <b>VS</b> ${E[h[o]]}</div><div class="rv-t">${r[0]}</div></div>
-    <div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div><div style="display:grid;grid-template-columns:1fr 5.5rem 1fr" class="text-xs font-bold opacity-90 text-center mb-1"><span>Toi</span><span></span><span class="truncate">${pn(m[o])||'Adversaire'}</span></div>
+    last=`<div id="lastTurn" class="mt-4 rounded-2xl rv ${r[1]} text-center${pc}"><div class="rv-l">Dernier tour révélé</div><div class="rv-v">${E[h[side]]} <b>VS</b> ${E[h[o]]}</div><div class="rv-t">${r[0]}</div></div>
+    <div id="histHead" class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div><div style="display:grid;grid-template-columns:1fr 5.5rem 1fr" class="text-xs font-bold opacity-90 text-center mb-1"><span>Toi</span><span></span><span class="truncate">${pn(m[o])||'Adversaire'}</span></div>
     <div class="hg one" style="margin-top:0">${m.hist.map((x,i)=>[x,i]).reverse().map(([x,i])=>{const cls=x.w==='='?'tt':x.w===side?'wa':'wb',top=i===m.hist.length-1;return `<div class="hr ${cls}"><span class="hn">${i+1}.</span><span class="c">${sym(x[side],top,0)}</span><i>vs</i><span class="c">${sym(x[o],top,.5)}</span></div>`}).join('')}</div></div>`;
   }
   const vis=`<div class="text-center mt-5"><label class="inline-flex items-center gap-2 text-sm opacity-90"><input type="checkbox" ${hid?'checked':''} onchange="toggleHid()" class="w-5 h-5"> Apparaître hors ligne</label></div>`;
@@ -545,7 +549,7 @@ async function helpCall(){
 async function pinIn(el){
   lg.pin=el.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);el.value=lg.pin;lg.err=false;
   if(lg.pin.length<4)return;
-  try{const j=await api('login',{id:lg.id,pin:lg.pin});tok=j.token;if(remember)ls.set('pfc_tok',tok);else ls.del('pfc_tok');lg={id:null,pin:'',err:false};sel=null;prevTurn=null}
+  try{const j=await api('login',{id:lg.id,pin:lg.pin});tok=j.token;jeuScroll=true;if(remember)ls.set('pfc_tok',tok);else ls.del('pfc_tok');lg={id:null,pin:'',err:false};sel=null;prevTurn=null}
   catch(e){
     lg.pin='';lg.err=true;
     const d=e.data||{};
