@@ -333,7 +333,7 @@ function render(){
   champCheck();
   if(tab==='jeu'&&jeuScroll){   // à chaque arrivée sur « Jouer » : la page descend d'elle-même jusqu'à la liste des tours joués (les 3 derniers tours arrivent en haut de l'écran) (une seule fois ; le joueur peut ensuite défiler librement)
     jeuScroll=false;const el=$('#histHead')||$('#lastTurn');
-    if(el)setTimeout(()=>{const y=window.scrollY,top=el.getBoundingClientRect().top+y-12,rows=document.querySelectorAll('#histHead .hr'),r3=rows[Math.min(2,rows.length-1)];let to=top;if(r3)to=Math.min(top,r3.getBoundingClientRect().bottom+y-window.innerHeight+16);softScroll(Math.max(0,to));},350);   // s'arrête quand le 3e tour (en partant du plus récent) est le dernier visible en bas d'écran   // petite pause, puis descente douce
+    if(el)requestAnimationFrame(()=>{const y=window.scrollY,top=el.getBoundingClientRect().top+y-12,rows=document.querySelectorAll('#histHead .hr'),r3=rows[Math.min(2,rows.length-1)];let to=top;if(r3)to=Math.min(top,r3.getBoundingClientRect().bottom+y-window.innerHeight+16);softScroll(Math.max(0,to));});   // s'arrête quand le 3e tour (en partant du plus récent) est le dernier visible en bas d'écran   // petite pause, puis descente douce
   }
   requestAnimationFrame(hintUpdate);
 }
