@@ -977,9 +977,11 @@ function sym(v,anim,dl){
   if(v==='c')return `<svg viewBox="0 0 40 40" fill="none" stroke="url(#gold)" stroke-linecap="round"><g class="snA" ${st}><path d="M16 5L29 31" stroke-width="4"/><circle cx="32" cy="33" r="5" stroke-width="3"/></g><g class="snB" ${st}><path d="M32 5L19 31" stroke-width="4"/><circle cx="16" cy="33" r="5" stroke-width="3"/></g></svg>`;
   return `<svg viewBox="0 0 40 40" class="${v==='r'?'hop':'wav'}" ${st}><use href="#g-${v}"/></svg>`;
 }
-function openMatch(k){watch=k;render();window.scrollTo(0,0)}
+let boardY=0;   // hauteur de défilement du tableau, mémorisée à l'ouverture d'un match
+function openMatch(k){boardY=window.scrollY;watch=k;render();window.scrollTo(0,0)}
+function backBoard(){watch=null;render();window.scrollTo(0,boardY)}
 function matchView(k){
-  const m=S.matches[k],back=`<button onclick="watch=null;render()" class="mb-3 px-3 py-2 rounded-xl card text-sm font-bold">← Retour au tableau</button>`;
+  const m=S.matches[k],back=`<button onclick="backBoard()" class="mb-3 px-3 py-2 rounded-xl card text-sm font-bold">← Retour au tableau</button>`;
   if(!m)return back+wrap('<p class="text-center">Match introuvable.</p>');
   const op=!!(m.a&&m.b&&!m.w),A=pn(m.a)||'À définir',B=pn(m.b)||'À définir',pl=pn(m.pend?(m.pend.by==='a'?m.a:m.b):null),wt=pn(m.pend?(m.pend.by==='a'?m.b:m.a):null);
   const st=m.w?`<div class="mt-3 p-3 rounded-2xl won-bg text-center font-bold" style="box-shadow:0 6px 16px rgba(0,0,0,.35);color:#0b1f13"><span class="flg" style="animation-duration:1.9s">🏁</span> Vainqueur : ${pn(m.w)||'—'}${m.ff?`<div class="text-base font-semibold mt-1">${m.ab===m.ff?'<span class="flg">🏳️</span> '+pn(m.ff)+' a abandonné':'⏱ '+pn(m.ff)+' éliminé(e) : délai dépassé'}</div>`:''}</div>`
