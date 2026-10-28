@@ -355,7 +355,7 @@ function jeuView0(){
   if(!S.cfg)return wrap('<p class="text-center">Le tournoi n\'a pas encore été créé par l\'organisateur.</p>');
   const id=me(),when=S.cfg.started===false&&S.cfg.startAt?fmtWhen(S.cfg.startAt):'';
   if(!id)return (when?wrap('<p class="text-center font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>'):'')+loginView();
-  let head=`<div class="mb-3" style="display:flex;align-items:baseline;justify-content:space-between;gap:.4rem 1rem"><span class="font-bold" style="min-width:0">👋 ${pn(id)}</span><span style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:.35rem;white-space:nowrap;flex:none"><button onclick="changePin()" class="text-sm underline opacity-80">Changer mon code</button><button onclick="logout()" class="text-sm underline opacity-80">Changer de joueur</button></span></div>`;
+  let head=`<div class="mb-3" style="display:flex;align-items:baseline;justify-content:space-between;gap:.4rem 1rem"><span class="font-bold" style="min-width:0">👋 ${pn(id)}</span><button onclick="logout()" class="text-sm underline opacity-80" style="margin-left:auto;white-space:nowrap;flex:none">Changer de joueur</button></div>`;
   if(window.Notification&&Notification.permission==='default')head+=`<button onclick="askNotif()" class="w-full mb-3 py-2 rounded-xl card text-sm font-bold">🔔 Activer les alertes</button>`;
   if(S.cfg.started===false)return wrap(head+'<p class="text-center text-4xl">🚦</p><p class="text-center font-bold mt-2">Le tournoi n\'a pas encore commencé.</p><p class="text-center mt-2 text-sm">L\'organisateur donnera bientôt le coup d\'envoi. Reviens un peu plus tard !</p>'+(when?'<p class="text-center mt-3 font-bold">'+CAL+' Coup d\'envoi prévu : '+when+'</p>':''));
   const m=myMatch();
@@ -542,14 +542,6 @@ async function pinIn(el){
     else lg.msg='Code incorrect'+(d.left>0&&d.left<=3?' ('+d.left+' essai'+(d.left>1?'s':'')+' restant'+(d.left>1?'s':'')+')':'');
   }
   render();
-}
-async function changePin(){
-  const old=prompt('Ton code secret actuel :');if(old===null||!old.trim())return;
-  const nw=prompt('Choisis ton nouveau code secret : 4 caractères (lettres A à Z ou chiffres) :');if(nw===null)return;
-  const n=nw.trim().toUpperCase();
-  if(!/^[A-Z0-9]{4}$/.test(n)){alert('Le nouveau code doit contenir exactement 4 caractères : des lettres (sans accent) ou des chiffres.');return}
-  try{await api('changepin',{pin:old.trim(),newpin:n});alert('Ton nouveau code secret est enregistré : '+n+'\nNote-le bien : l\'organisateur ne peut pas le voir (il peut seulement t\'en générer un nouveau).')}
-  catch(e){const d=e.data||{};alert(e.status===401&&e.message==='pin'?'Code actuel incorrect'+(d.left?' ('+d.left+' essai'+(d.left>1?'s':'')+' restant'+(d.left>1?'s':'')+')':'')+'.':e.message==='locked'?'Trop d\'essais : réessaie dans '+Math.ceil((d.retry||180)/60)+' min.':e.status===401?'Ta connexion n\'est plus valide : reconnecte-toi.':e.message==='format'?'Le nouveau code doit contenir exactement 4 caractères.':'Erreur : '+e.message)}
 }
 function logout(){pz={st:'idle',choice:null,busy:false,err:'',ui:null,role:null,txt:'',snack:''};sv={st:'idle',s:null,i:'',done:false,open:false,busy:false,err:''};tok=null;ls.del('pfc_tok');sel=null;prevTurn=null;render()}
 async function quitT(id){
