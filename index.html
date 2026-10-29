@@ -84,26 +84,26 @@ filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 .hr.tt{--h1:radial-gradient(ellipse 85% 140% at 50% 50%,rgba(210,210,220,.24),transparent 85%)}
 /* symboles « vivants » du dernier tour joué : Pierre saute, Feuille ondule, Ciseaux s'ouvrent et se ferment */
 .hop{animation:hopy 1.3s ease-in-out infinite;transform-origin:50% 100%}
-/* duel du dernier tour : les deux symboles foncent l'un sur l'autre, s'affrontent, puis reprennent leur place (cycle de 4,6 s) */
+/* duel du dernier tour : les deux symboles foncent l'un sur l'autre, s'affrontent, puis reprennent leur place (un duel de ~4,6 s toutes les 11 s ; entre deux duels, les symboles bougent sur place) */
 .hr.top{container-type:inline-size;--dx:calc(25cqw + 2px)}
 .fgL{--s:1}.fgR{--s:-1}.fw{z-index:2}
-.fgo{animation:fgo 4.6s infinite}
-@keyframes fgo{0%,26%{transform:translateX(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}40%{transform:translateX(calc(var(--dx)*var(--s)))}72%{transform:translateX(calc(var(--dx)*var(--s)));animation-timing-function:ease-in-out}88%,100%{transform:translateX(0)}}
-.fgt{animation:fgt 4.6s infinite}
-@keyframes fgt{0%,26%{transform:translateX(0) rotate(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}40%{transform:translateX(calc(var(--dx)*var(--s))) rotate(calc(9deg*var(--s)));animation-timing-function:ease-out}47%{transform:translateX(calc(var(--dx)*var(--s) - 24px*var(--s))) rotate(calc(-6deg*var(--s)))}54%{transform:translateX(calc(var(--dx)*var(--s) - 6px*var(--s))) rotate(calc(3deg*var(--s)));animation-timing-function:ease-in-out}70%,100%{transform:translateX(0) rotate(0)}}
-.fxcr{animation:fxcr 4.6s infinite;transform-origin:50% 100%}
-@keyframes fxcr{0%,40%{transform:scale(1,1)}46%{transform:scale(1.45,.2)}72%{transform:scale(1.45,.2)}86%,100%{transform:scale(1,1)}}
-.fxww{animation:fxww 4.6s infinite;transform-origin:50% 55%}
-@keyframes fxww{0%,40%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}52%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}57%{transform:scale(1.45,1.7) translateX(calc(21px*var(--s)))}62%{transform:scale(1.75,1.5) translateX(calc(21px*var(--s)))}67%{transform:scale(1.5,1.65) translateX(calc(21px*var(--s)))}72%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}86%,100%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}}
-.fxwl{animation:fxwl 4.6s infinite}
-@keyframes fxwl{0%,40%{transform:scale(1);opacity:1}52%{transform:scale(.6);opacity:.55}72%{transform:scale(.6);opacity:.55}86%,100%{transform:scale(1);opacity:1}}
+.fgo{animation:fgo 11s infinite}
+@keyframes fgo{0.0%,10.9%{transform:translateX(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}16.7%{transform:translateX(calc(var(--dx)*var(--s)))}30.1%{transform:translateX(calc(var(--dx)*var(--s)));animation-timing-function:ease-in-out}36.8%,100%{transform:translateX(0)}}
+.fgt{animation:fgt 11s infinite}
+@keyframes fgt{0.0%,10.9%{transform:translateX(0) rotate(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}16.7%{transform:translateX(calc(var(--dx)*var(--s))) rotate(calc(9deg*var(--s)));animation-timing-function:ease-out}19.7%{transform:translateX(calc(var(--dx)*var(--s) - 24px*var(--s))) rotate(calc(-6deg*var(--s)))}22.6%{transform:translateX(calc(var(--dx)*var(--s) - 6px*var(--s))) rotate(calc(3deg*var(--s)));animation-timing-function:ease-in-out}29.3%,100%{transform:translateX(0) rotate(0)}}
+.fxcr{animation:fxcr 11s infinite;transform-origin:50% 100%}
+@keyframes fxcr{0.0%,16.7%{transform:scale(1,1)}19.2%{transform:scale(1.45,.2)}30.1%{transform:scale(1.45,.2)}36.0%,100%{transform:scale(1,1)}}
+.fxww{animation:fxww 11s infinite;transform-origin:50% 55%}
+@keyframes fxww{0.0%,16.7%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}21.7%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}23.8%{transform:scale(1.45,1.7) translateX(calc(21px*var(--s)))}25.9%{transform:scale(1.75,1.5) translateX(calc(21px*var(--s)))}28.0%{transform:scale(1.5,1.65) translateX(calc(21px*var(--s)))}30.1%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}36.0%,100%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}}
+.fxwl{animation:fxwl 11s infinite}
+@keyframes fxwl{0.0%,16.7%{transform:scale(1);opacity:1}21.7%{transform:scale(.6);opacity:.55}30.1%{transform:scale(.6);opacity:.55}36.0%,100%{transform:scale(1);opacity:1}}
 .fl{z-index:3}
 .two{display:inline-grid;width:38px;height:38px;transform-origin:50% 92%}
 .two svg{grid-area:1/1}
-.hA{clip-path:inset(0 50% 0 0);animation:cutA 4.6s infinite;transform-origin:50% 100%}
-.hB{clip-path:inset(0 0 0 50%);animation:cutB 4.6s infinite;transform-origin:50% 100%}
-@keyframes cutA{0%,42%{transform:none}50%{transform:translateX(-11px) rotate(-16deg)}72%{transform:translateX(-11px) rotate(-16deg)}86%,100%{transform:none}}
-@keyframes cutB{0%,42%{transform:none}50%{transform:translateX(11px) rotate(16deg)}72%{transform:translateX(11px) rotate(16deg)}86%,100%{transform:none}}
+.hA{clip-path:inset(0 50% 0 0);animation:cutA 11s infinite;transform-origin:50% 100%}
+.hB{clip-path:inset(0 0 0 50%);animation:cutB 11s infinite;transform-origin:50% 100%}
+@keyframes cutA{0.0%,17.6%{transform:none}20.9%{transform:translateX(-11px) rotate(-16deg)}30.1%{transform:translateX(-11px) rotate(-16deg)}36.0%,100%{transform:none}}
+@keyframes cutB{0.0%,17.6%{transform:none}20.9%{transform:translateX(11px) rotate(16deg)}30.1%{transform:translateX(11px) rotate(16deg)}36.0%,100%{transform:none}}
 @media (prefers-reduced-motion:reduce){.fgo,.fgt,.fxcr,.fxww,.fxwl,.hA,.hB{animation:none}}
 @keyframes flgw{0%,100%{transform:rotate(-7deg) skewY(0) translateY(0)}25%{transform:rotate(4deg) skewY(-6deg) translateY(-1.5px)}50%{transform:rotate(9deg) skewY(2deg) translateY(0)}75%{transform:rotate(-2deg) skewY(6deg) translateY(-1px)}}
 .flg{display:inline-block;transform-origin:15% 100%;animation:flgw 2.4s ease-in-out infinite}
@@ -1005,7 +1005,7 @@ function duel(l,r){
   const B={c:'f',r:'c',f:'r'};
   if(l===r)return ['fgt fgL','','fgt fgR',''];
   const lw=B[l]===r,w=lw?l:r,fxW=w==='f'?'wrapW':'',fxL=w==='c'?'cut':w==='r'?'crush':'wrapL';
-  const lc=w==='f'?' fl':'';return lw?['fgo fgL fw',fxW,'fgo fgR'+lc,fxL]:['fgo fgL'+lc,fxL,'fgo fgR fw',fxW];
+  const g='fgo',lc=w==='f'?' fl':'';return lw?[g+' fgL fw',fxW,g+' fgR'+lc,fxL]:[g+' fgL'+lc,fxL,g+' fgR fw',fxW];
 }
 function duelRow(x,a,b,top){
   if(!top)return `<span class="c">${sym(x[a],0)}</span><i>vs</i><span class="c">${sym(x[b],0)}</span>`;
