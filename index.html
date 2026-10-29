@@ -94,9 +94,10 @@ filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 .fxcr{animation:fxcr 4.6s infinite;transform-origin:50% 100%}
 @keyframes fxcr{0%,40%{transform:scale(1,1)}46%{transform:scale(1.45,.2)}72%{transform:scale(1.45,.2)}86%,100%{transform:scale(1,1)}}
 .fxww{animation:fxww 4.6s infinite;transform-origin:50% 55%}
-@keyframes fxww{0%,40%{transform:scale(1)}50%{transform:scale(1.5) translateX(calc(8px*var(--s)))}72%{transform:scale(1.5) translateX(calc(8px*var(--s)))}86%,100%{transform:scale(1)}}
+@keyframes fxww{0%,40%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}52%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}57%{transform:scale(1.45,1.7) translateX(calc(21px*var(--s)))}62%{transform:scale(1.75,1.5) translateX(calc(21px*var(--s)))}67%{transform:scale(1.5,1.65) translateX(calc(21px*var(--s)))}72%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}86%,100%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}}
 .fxwl{animation:fxwl 4.6s infinite}
-@keyframes fxwl{0%,40%{transform:scale(1);opacity:1}50%{transform:scale(.62);opacity:.35}72%{transform:scale(.62);opacity:.35}86%,100%{transform:scale(1);opacity:1}}
+@keyframes fxwl{0%,40%{transform:scale(1);opacity:1}52%{transform:scale(.6);opacity:.55}72%{transform:scale(.6);opacity:.55}86%,100%{transform:scale(1);opacity:1}}
+.fl{z-index:3}
 .two{display:inline-grid;width:38px;height:38px;transform-origin:50% 92%}
 .two svg{grid-area:1/1}
 .hA{clip-path:inset(0 50% 0 0);animation:cutA 4.6s infinite;transform-origin:50% 100%}
@@ -1004,7 +1005,7 @@ function duel(l,r){
   const B={c:'f',r:'c',f:'r'};
   if(l===r)return ['fgt fgL','','fgt fgR',''];
   const lw=B[l]===r,w=lw?l:r,fxW=w==='f'?'wrapW':'',fxL=w==='c'?'cut':w==='r'?'crush':'wrapL';
-  return lw?['fgo fgL fw',fxW,'fgo fgR',fxL]:['fgo fgL',fxL,'fgo fgR fw',fxW];
+  const lc=w==='f'?' fl':'';return lw?['fgo fgL fw',fxW,'fgo fgR'+lc,fxL]:['fgo fgL'+lc,fxL,'fgo fgR fw',fxW];
 }
 function duelRow(x,a,b,top){
   if(!top)return `<span class="c">${sym(x[a],0)}</span><i>vs</i><span class="c">${sym(x[b],0)}</span>`;
