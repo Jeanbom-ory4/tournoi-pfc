@@ -84,27 +84,31 @@ filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 .hr.tt{--h1:radial-gradient(ellipse 85% 140% at 50% 50%,rgba(210,210,220,.24),transparent 85%)}
 /* symboles « vivants » du dernier tour joué : Pierre saute, Feuille ondule, Ciseaux s'ouvrent et se ferment */
 .hop{animation:hopy 1.3s ease-in-out infinite;transform-origin:50% 100%}
-/* duel du dernier tour : les deux symboles foncent l'un sur l'autre, s'affrontent, puis reprennent leur place (un duel de ~4,6 s toutes les 11 s ; entre deux duels, les symboles bougent sur place) */
+/* duel du dernier tour : les deux symboles foncent l'un sur l'autre, s'affrontent, puis reprennent leur place (un duel de ~4,6 s toutes les 9 s ; entre deux duels, les symboles bougent sur place) */
 .hr.top{container-type:inline-size;--dx:calc(25cqw + 2px)}
 .fgL{--s:1}.fgR{--s:-1}.fw{z-index:2}
-.fgo{animation:fgo 11s infinite}
-@keyframes fgo{0.0%,10.9%{transform:translateX(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}16.7%{transform:translateX(calc(var(--dx)*var(--s)))}30.1%{transform:translateX(calc(var(--dx)*var(--s)));animation-timing-function:ease-in-out}36.8%,100%{transform:translateX(0)}}
-.fgt{animation:fgt 11s infinite}
-@keyframes fgt{0.0%,10.9%{transform:translateX(0) rotate(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}16.7%{transform:translateX(calc(var(--dx)*var(--s))) rotate(calc(9deg*var(--s)));animation-timing-function:ease-out}19.7%{transform:translateX(calc(var(--dx)*var(--s) - 24px*var(--s))) rotate(calc(-6deg*var(--s)))}22.6%{transform:translateX(calc(var(--dx)*var(--s) - 6px*var(--s))) rotate(calc(3deg*var(--s)));animation-timing-function:ease-in-out}29.3%,100%{transform:translateX(0) rotate(0)}}
-.fxcr{animation:fxcr 11s infinite;transform-origin:50% 100%}
-@keyframes fxcr{0.0%,16.7%{transform:scale(1,1)}19.2%{transform:scale(1.45,.2)}30.1%{transform:scale(1.45,.2)}36.0%,100%{transform:scale(1,1)}}
-.fxww{animation:fxww 11s infinite;transform-origin:50% 55%}
-@keyframes fxww{0.0%,16.7%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}21.7%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}23.8%{transform:scale(1.45,1.7) translateX(calc(21px*var(--s)))}25.9%{transform:scale(1.75,1.5) translateX(calc(21px*var(--s)))}28.0%{transform:scale(1.5,1.65) translateX(calc(21px*var(--s)))}30.1%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}36.0%,100%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}}
-.fxwl{animation:fxwl 11s infinite}
-@keyframes fxwl{0.0%,16.7%{transform:scale(1);opacity:1}21.7%{transform:scale(.6);opacity:.55}30.1%{transform:scale(.6);opacity:.55}36.0%,100%{transform:scale(1);opacity:1}}
+.fgo{animation:fgo 9s infinite}
+@keyframes fgo{0.0%,13.3%{transform:translateX(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}20.4%{transform:translateX(calc(var(--dx)*var(--s)))}36.8%{transform:translateX(calc(var(--dx)*var(--s)));animation-timing-function:ease-in-out}45.0%,100%{transform:translateX(0)}}
+.fgt{animation:fgt 9s infinite}
+@keyframes fgt{0.0%,13.3%{transform:translateX(0) rotate(0);animation-timing-function:cubic-bezier(.55,0,.9,.5)}20.4%{transform:translateX(calc(var(--dx)*var(--s))) rotate(calc(9deg*var(--s)));animation-timing-function:ease-out}24.1%{transform:translateX(calc(var(--dx)*var(--s) - 24px*var(--s))) rotate(calc(-6deg*var(--s)))}27.6%{transform:translateX(calc(var(--dx)*var(--s) - 6px*var(--s))) rotate(calc(3deg*var(--s)));animation-timing-function:ease-in-out}35.8%,100%{transform:translateX(0) rotate(0)}}
+.fxcr{animation:fxcr 9s infinite;transform-origin:50% 100%}
+@keyframes fxcr{0.0%,20.4%{transform:scale(1,1)}23.5%{transform:scale(1.45,.2)}36.8%{transform:scale(1.45,.2)}44.0%,100%{transform:scale(1,1)}}
+.fxww{animation:fxww 9s infinite;transform-origin:50% 55%}
+@keyframes fxww{0.0%,20.4%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}26.5%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}29.1%{transform:scale(1.45,1.7) translateX(calc(21px*var(--s)))}31.7%{transform:scale(1.75,1.5) translateX(calc(21px*var(--s)))}34.2%{transform:scale(1.5,1.65) translateX(calc(21px*var(--s)))}36.8%{transform:scale(1.7,1.6) translateX(calc(21px*var(--s)));clip-path:ellipse(47% 50% at 50% 50%)}44.0%,100%{transform:scale(1) translateX(0);clip-path:ellipse(75% 75% at 50% 50%)}}
+.fxwl{animation:fxwl 9s infinite}
+@keyframes fxwl{0.0%,20.4%{transform:scale(1);opacity:1}26.5%{transform:scale(.6);opacity:.55}36.8%{transform:scale(.6);opacity:.55}44.0%,100%{transform:scale(1);opacity:1}}
 .fl{z-index:3}
 .two{display:inline-grid;width:38px;height:38px;transform-origin:50% 92%}
 .two svg{grid-area:1/1}
-.hA{clip-path:inset(0 50% 0 0);animation:cutA 11s infinite;transform-origin:50% 100%}
-.hB{clip-path:inset(0 0 0 50%);animation:cutB 11s infinite;transform-origin:50% 100%}
-@keyframes cutA{0.0%,17.6%{transform:none}20.9%{transform:translateX(-11px) rotate(-16deg)}30.1%{transform:translateX(-11px) rotate(-16deg)}36.0%,100%{transform:none}}
-@keyframes cutB{0.0%,17.6%{transform:none}20.9%{transform:translateX(11px) rotate(16deg)}30.1%{transform:translateX(11px) rotate(16deg)}36.0%,100%{transform:none}}
+.hA{clip-path:inset(0 50% 0 0);animation:cutA 9s infinite;transform-origin:50% 100%}
+.hB{clip-path:inset(0 0 0 50%);animation:cutB 9s infinite;transform-origin:50% 100%}
+@keyframes cutA{0.0%,21.5%{transform:none}25.5%{transform:translateX(-11px) rotate(-16deg)}36.8%{transform:translateX(-11px) rotate(-16deg)}44.0%,100%{transform:none}}
+@keyframes cutB{0.0%,21.5%{transform:none}25.5%{transform:translateX(11px) rotate(16deg)}36.8%{transform:translateX(11px) rotate(16deg)}44.0%,100%{transform:none}}
 @media (prefers-reduced-motion:reduce){.fgo,.fgt,.fxcr,.fxww,.fxwl,.hA,.hB{animation:none}}
+/* ciseaux sélectionnés : l'emoji tourne sur lui-même */
+.scsp{animation:scspin 3.6s ease-in-out infinite}
+@keyframes scspin{0%,8%{transform:rotate(0) scale(1)}30%{transform:rotate(150deg) scale(1.08)}52%,100%{transform:rotate(360deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.scsp{animation:none}}
 @keyframes flgw{0%,100%{transform:rotate(-7deg) skewY(0) translateY(0)}25%{transform:rotate(4deg) skewY(-6deg) translateY(-1.5px)}50%{transform:rotate(9deg) skewY(2deg) translateY(0)}75%{transform:rotate(-2deg) skewY(6deg) translateY(-1px)}}
 .flg{display:inline-block;transform-origin:15% 100%;animation:flgw 2.4s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.flg{animation:none}}
@@ -436,7 +440,7 @@ function jeuView0(){
   if(locked)status=`<div class="mt-4 p-3 rounded-2xl bg-yellow-400 text-yellow-950 font-bold text-center">🔒 Coup verrouillé. En attente du coup de ${pn(opp)}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ ${pn(opp)} doit jouer avant d'être éliminé(e) : reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`;
   else{
     status=`<div class="mt-4 p-3 rounded-2xl bg-emerald-400 text-emerald-950 font-bold text-center text-lg">À ton tour de jouer !${m.due?`<div class="text-sm font-semibold mt-1">⏱ Il te reste <span data-cd="${m.due}">${cd(m.due-now())}</span> pour jouer, sinon tu seras éliminé(e).</div>`:''}</div>`;
-    act=`<div class="grid grid-cols-3 gap-2 mt-3">${['r','f','c'].map(k=>`<button onclick="sel='${k}';render()" class="rounded-2xl py-5 flex flex-col items-center gap-1 font-bold border-4 ${sel===k?'selr text-purple-800 scale-105':'card border-transparent'}"><span class="sym" style="font-size:4rem;line-height:1.05;height:4.6rem${k==='r'?';transform:translateX(-2px)':''}">${E[k]}</span><span class="text-sm">${N[k]}</span></button>`).join('')}</div>
+    act=`<div class="grid grid-cols-3 gap-2 mt-3">${['r','f','c'].map(k=>`<button onclick="sel='${k}';render()" class="rounded-2xl py-5 flex flex-col items-center gap-1 font-bold border-4 ${sel===k?'selr text-purple-800 scale-105':'card border-transparent'}"><span class="sym${sel===k?(k==='r'?' hop':k==='f'?' wav':' scsp'):''}" style="font-size:4rem;line-height:1.05;height:4.6rem${k==='r'?';margin-right:4px':''}">${E[k]}</span><span class="text-sm">${N[k]}</span></button>`).join('')}</div>
     <button ${sel&&!busy?'':'disabled'} onclick="play('${m.id}')" class="w-full mt-3 py-4 rounded-2xl font-black text-lg ${sel?'bg-yellow-300 text-yellow-950':'bg-white/20 text-white/60'}">${busy?'Envoi…':'Valider mon coup 🔒'}</button>
     <p class="text-xs text-center mt-2 opacity-80">Une fois validé, le coup ne peut plus être changé.</p>
     <div class="text-center mt-5"><button onclick="quitT('${m.id}')" class="px-4 py-2 rounded-xl border border-white/40 text-sm font-semibold opacity-90">🏳️ Abandonner le tournoi</button></div>`;
@@ -997,8 +1001,9 @@ function sym(v,anim,dl,fx){
   if(!anim)return `<svg viewBox="0 0 40 40"><use href="#g-${v}"/></svg>`;
   if(fx==='cut')return `<span class="two wav" ${st}><svg viewBox="0 0 40 40" class="hA"><use href="#g-${v}"/></svg><svg viewBox="0 0 40 40" class="hB"><use href="#g-${v}"/></svg></span>`;
   if(v==='c')return `<svg viewBox="0 0 40 40" fill="none" stroke="url(#gold)" stroke-linecap="round"${fx==='crush'?' class="fxcr"':''}><g class="snA" ${st}><path d="M16 5L29 31" stroke-width="4"/><circle cx="32" cy="33" r="5" stroke-width="3"/></g><g class="snB" ${st}><path d="M32 5L19 31" stroke-width="4"/><circle cx="16" cy="33" r="5" stroke-width="3"/></g></svg>`;
-  const cl=fx==='wrapW'?'fxww':fx==='wrapL'?'fxwl':v==='r'?'hop':'wav';
-  return `<svg viewBox="0 0 40 40" class="${cl}" ${st}><use href="#g-${v}"/></svg>`;
+  const idle=v==='r'?'hop':'wav',svg=`<svg viewBox="0 0 40 40" class="${idle}" ${st}><use href="#g-${v}"/></svg>`;
+  if(fx==='wrapW'||fx==='wrapL')return `<span class="${fx==='wrapW'?'fxww':'fxwl'}" style="display:flex">${svg}</span>`;
+  return svg;
 }
 // Duel de la ligne la plus récente : [classes ligne gauche, effet gauche, classes droite, effet droite]
 function duel(l,r){
