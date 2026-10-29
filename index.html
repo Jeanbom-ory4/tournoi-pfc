@@ -53,6 +53,8 @@ button{touch-action:manipulation}
 .win-rm .in-b .win-s,.win-rm .in-b .win-seal{animation-delay:.3s;animation-duration:.6s}
 /* Indicateur « il y a une suite en bas » (page Jouer) */
 #scrollHint{position:fixed;right:max(14px,calc(50% - 14rem + 10px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;padding:0;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(20,10,35,.72);color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s ease}
+#topBtn{position:fixed;right:max(14px,calc(50% - 14rem + 10px));bottom:calc(14px + 2.5rem + 10px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;padding:0;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(20,10,35,.72);color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s ease}
+#topBtn svg{width:1.3rem;height:1.3rem}
 #scrollHint svg{width:1.3rem;height:1.3rem;animation:hnt 1.4s ease-in-out infinite}
 @keyframes hnt{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
 @media (prefers-reduced-motion:reduce){#scrollHint svg{animation:none}}
@@ -261,11 +263,18 @@ const hintEl=document.createElement('button');hintEl.id='scrollHint';hintEl.type
 hintEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 hintEl.onclick=()=>window.scrollBy({top:Math.round(window.innerHeight*.8),behavior:'smooth'});
 document.body.appendChild(hintEl);
+// Bouton « remonter en haut » : rubriques Tableau et À propos (pages longues), une fois qu'on est descendu
+const topEl=document.createElement('button');topEl.id='topBtn';topEl.type='button';topEl.setAttribute('aria-label','Remonter en haut de la page');
+topEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
+topEl.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+document.body.appendChild(topEl);
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
   const hk=(tab==='jeu'||tab==='tableau'||tab==='apropos');   // rubriques concernées : Jouer, Tableau et À propos. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
   const on=hk&&loaded&&rem>70&&!document.hidden;
   hintEl.style.opacity=on?'1':'0';hintEl.style.pointerEvents=on?'auto':'none';
+  const up=(tab==='tableau'||tab==='apropos')&&loaded&&window.scrollY>300&&!document.hidden;
+  topEl.style.opacity=up?'1':'0';topEl.style.pointerEvents=up?'auto':'none';
 }
 window.addEventListener('scroll',hintUpdate,{passive:true});window.addEventListener('resize',hintUpdate);
 try{new ResizeObserver(hintUpdate).observe(document.body)}catch(e){}
