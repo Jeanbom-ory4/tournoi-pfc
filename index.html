@@ -111,6 +111,14 @@ filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 .heart{animation:heartb 1.1s ease-in-out infinite;transform-origin:50% 55%}
 @keyframes heartb{0%{transform:scale(1)}14%{transform:scale(1.22)}28%{transform:scale(1.04)}42%{transform:scale(1.17)}70%,100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.heart{animation:none}}
+/* grand trophée qui brille au-dessus de la finale */
+.trophy{display:flex;align-items:center;justify-content:center;pointer-events:none}
+.tcup{font-size:4.4rem;line-height:1;animation:tglow 2.6s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes tglow{0%,100%{filter:drop-shadow(0 0 6px rgba(253,224,71,.55)) brightness(1);transform:scale(1)}50%{filter:drop-shadow(0 0 20px rgba(255,236,120,.95)) drop-shadow(0 0 6px #fff) brightness(1.22);transform:scale(1.05)}}
+.tsp{position:absolute;color:#fff6a8;text-shadow:0 0 8px #facc15;animation:ttw 2.2s ease-in-out infinite;opacity:0}
+.s1{left:18%;top:10%;font-size:1.3rem}.s2{right:16%;top:26%;font-size:1rem;animation-delay:.7s}.s3{left:30%;bottom:6%;font-size:.9rem;animation-delay:1.4s}
+@keyframes ttw{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(25deg)}}
+@media (prefers-reduced-motion:reduce){.tcup,.tsp{animation:none}.tsp{opacity:.8}}
 @keyframes flgw{0%,100%{transform:rotate(-7deg) skewY(0) translateY(0)}25%{transform:rotate(4deg) skewY(-6deg) translateY(-1.5px)}50%{transform:rotate(9deg) skewY(2deg) translateY(0)}75%{transform:rotate(-2deg) skewY(6deg) translateY(-1px)}}
 .flg{display:inline-block;transform-origin:15% 100%;animation:flgw 2.4s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.flg{animation:none}}
@@ -981,6 +989,7 @@ function bracketView(){
   let H=cntC(0)*SLOT;
   const labTop=Y[R-1][0]+CARD/2+40,y3=labTop+LAB+CARD/2;
   if(th)H=Math.max(H,y3+CARD/2+8);
+  const TH=84,TP=Math.max(0,TH+4-(Y[R-1][0]-CARD/2));   // grand trophée au-dessus de la finale ; on décale le tableau vers le bas s'il manque de place
   const W='background:#fff',cols=[];
   for(let r=0;r<R;r++){
     let cards='',g='';
@@ -1000,7 +1009,8 @@ function bracketView(){
     if(th&&r===R-1)cards+=`<div class="text-center" style="position:absolute;left:0;width:${CW}px;top:${labTop}px;height:${LAB}px"><div class="text-sm font-bold">🥉 Petite finale</div><div class="leading-4 opacity-90" style="font-size:13px">perdants des demi-finales</div></div><div style="position:absolute;left:0;width:${CW}px;top:${labTop+LAB}px">${card(th)}</div>`;
     const byes=[];
     const cap=byes.length===1?`<div class="opacity-80 truncate" style="font-size:11px">${byes[0].w||byes[0].a||byes[0].b?'Exempté(e) : '+pn(byes[0].w||byes[0].a||byes[0].b):'1 joueur exempté'}</div>`:byes.length>1?`<div class="opacity-80" style="font-size:11px">${byes.length} joueurs exemptés</div>`:'';
-    cols.push(`<div style="width:${CW}px;flex:none"><div class="text-center" style="height:36px"><div class="text-xs font-bold opacity-90">${rlabel(r)}</div>${cap}</div><div style="position:relative;height:${H}px"><div style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:.45;pointer-events:none">${g}</div>${cards}</div></div>`);
+    const trophy=r===R-1?`<div class="trophy" style="position:absolute;left:0;width:${CW}px;top:${Y[R-1][0]-CARD/2-TH}px;height:${TH}px"><span class="tsp s1">✨</span><span class="tsp s2">✨</span><span class="tsp s3">✦</span><span class="tcup">🏆</span></div>`:'';
+    cols.push(`<div style="width:${CW}px;flex:none"><div class="text-center" style="height:36px"><div class="text-xs font-bold opacity-90">${rlabel(r)}</div>${cap}</div><div style="position:relative;height:${H+TP}px"><div style="position:absolute;left:0;top:${TP}px;width:100%;height:${H}px"><div style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:.45;pointer-events:none">${g}</div>${cards}${trophy}</div></div></div>`);
   }
   const bigBtn=window.innerWidth>=768?`<div class="text-center mb-2"><button onclick="bigBoard=!bigBoard;render()" class="px-3 py-1.5 rounded-xl card text-xs font-bold">${bigBoard?'↙ Vue réduite':'⛶ Tableau complet'}</button></div>`:'';
   return out+bigBtn+`<p class="text-xs text-center opacity-80 mb-2">👁 Touche un match pour le suivre en spectateur.</p><div class="overflow-x-auto" ${bigBoard&&window.innerWidth>=768?`style="width:calc(100vw - 48px);margin-left:calc(50% - 50vw + 24px)"`:''}><div class="flex gap-6 pb-1" style="margin:0 auto;width:max-content">${cols.join('')}</div></div>`;
