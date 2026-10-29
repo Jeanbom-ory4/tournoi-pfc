@@ -354,7 +354,7 @@ function softScroll(to){
   const step=now=>{const k=Math.min(1,(now-t0)/dur);window.scrollTo(0,from+d*ease(k));if(k<1)softRaf=requestAnimationFrame(step);else stop()};
   softRaf=requestAnimationFrame(step);
 }
-function setTab(t){const was=tab;tab=t;if(t==='jeu')jeuScroll=true;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()}}
+function setTab(t){const was=tab,hadW=!!watch;tab=t;if(t==='jeu')jeuScroll=true;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()};if(t!==was||hadW)hpush()}
 
 /* ---------- Joueur ---------- */
 function myMatch(){
@@ -978,8 +978,12 @@ function sym(v,anim,dl){
   return `<svg viewBox="0 0 40 40" class="${v==='r'?'hop':'wav'}" ${st}><use href="#g-${v}"/></svg>`;
 }
 let boardY=0;   // hauteur de défilement du tableau, mémorisée à l'ouverture d'un match
-function openMatch(k){boardY=window.scrollY;watch=k;render();window.scrollTo(0,0)}
-function backBoard(){watch=null;render();window.scrollTo(0,boardY)}
+function openMatch(k){boardY=window.scrollY;watch=k;hpush();render();window.scrollTo(0,0)}
+function backBoard(){if(history.state&&history.state.watch){history.back();return}watch=null;render();window.scrollTo(0,boardY)}
+// bouton « retour » du téléphone : chaque changement de rubrique ou ouverture de match crée une étape d'historique, pour revenir en arrière dans l'appli au lieu de la quitter
+function hpush(){try{history.pushState({tab,watch},'')}catch(e){}}
+try{history.replaceState({tab,watch:null},'')}catch(e){}
+window.addEventListener('popstate',e=>{const st=e.state;if(!st)return;let t=st.tab||'jeu';if(souv&&t==='jeu')t='tableau';if(t==='admin'&&!adminKey)t='jeu';const fromW=!!watch;tab=t;watch=st.watch&&S.matches&&S.matches[st.watch]?st.watch:null;if(tab!=='tableau')bigBoard=false;if(tab==='jeu')jeuScroll=true;render();window.scrollTo(0,tab==='tableau'&&!watch&&fromW?boardY:0)});
 function matchView(k){
   const m=S.matches[k],back=`<button onclick="backBoard()" class="mb-3 px-3 py-2 rounded-xl card text-sm font-bold">← Retour au tableau</button>`;
   if(!m)return back+wrap('<p class="text-center">Match introuvable.</p>');
