@@ -107,10 +107,10 @@ filter:drop-shadow(0 1px 1px rgba(0,0,0,.8))}
 @keyframes cutA{0.0%,21.5%{transform:none}25.5%{transform:translateX(-11px) rotate(-16deg)}36.8%{transform:translateX(-11px) rotate(-16deg)}44.0%,100%{transform:none}}
 @keyframes cutB{0.0%,21.5%{transform:none}25.5%{transform:translateX(11px) rotate(16deg)}36.8%{transform:translateX(11px) rotate(16deg)}44.0%,100%{transform:none}}
 @media (prefers-reduced-motion:reduce){.fgo,.fgt,.fxcr,.fxww,.fxwl,.hA,.hB{animation:none}}
-/* ciseaux sélectionnés : l'emoji tourne sur lui-même */
-.scsp{animation:scspin 3.6s ease-in-out infinite}
-@keyframes scspin{0%,8%{transform:rotate(0) scale(1)}30%{transform:rotate(150deg) scale(1.08)}52%,100%{transform:rotate(360deg) scale(1)}}
-@media (prefers-reduced-motion:reduce){.scsp{animation:none}}
+/* symbole sélectionné : il grossit au rythme de battements de cœur (deux pulsations puis un repos) */
+.heart{animation:heartb 1.1s ease-in-out infinite;transform-origin:50% 55%}
+@keyframes heartb{0%{transform:scale(1)}14%{transform:scale(1.22)}28%{transform:scale(1.04)}42%{transform:scale(1.17)}70%,100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.heart{animation:none}}
 @keyframes flgw{0%,100%{transform:rotate(-7deg) skewY(0) translateY(0)}25%{transform:rotate(4deg) skewY(-6deg) translateY(-1.5px)}50%{transform:rotate(9deg) skewY(2deg) translateY(0)}75%{transform:rotate(-2deg) skewY(6deg) translateY(-1px)}}
 .flg{display:inline-block;transform-origin:15% 100%;animation:flgw 2.4s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.flg{animation:none}}
@@ -449,7 +449,7 @@ function jeuView0(){
   if(locked)status=`<div class="mt-4 p-3 rounded-2xl bg-yellow-400 text-yellow-950 font-bold text-center">🔒 Coup verrouillé. En attente du coup de ${pn(opp)}...${m.due?`<div class="text-xs font-semibold mt-1">⏱ ${pn(opp)} doit jouer avant d'être éliminé(e) : reste <span data-cd="${m.due}">${cd(m.due-now())}</span></div>`:''}</div>`;
   else{
     status=`<div class="mt-4 p-3 rounded-2xl bg-emerald-400 text-emerald-950 font-bold text-center text-lg">À ton tour de jouer !${m.due?`<div class="text-sm font-semibold mt-1">⏱ Il te reste <span data-cd="${m.due}">${cd(m.due-now())}</span> pour jouer, sinon tu seras éliminé(e).</div>`:''}</div>`;
-    act=`<div class="grid grid-cols-3 gap-2 mt-3">${['r','f','c'].map(k=>`<button onclick="sel='${k}';render()" class="rounded-2xl py-5 flex flex-col items-center gap-1 font-bold border-4 ${sel===k?'selr text-purple-800 scale-105':'card border-transparent'}"><span class="sym${sel===k?(k==='r'?' hop':k==='f'?' wav':' scsp'):''}" style="font-size:4rem;line-height:1.05;height:4.6rem${k==='r'?';margin-right:4px':''}">${E[k]}</span><span class="text-sm">${N[k]}</span></button>`).join('')}</div>
+    act=`<div class="grid grid-cols-3 gap-2 mt-3">${['r','f','c'].map(k=>`<button onclick="sel='${k}';render()" class="rounded-2xl py-5 flex flex-col items-center gap-1 font-bold border-4 ${sel===k?'selr text-purple-800 scale-105':'card border-transparent'}"><span class="sym${sel===k?' heart':''}" style="font-size:4rem;line-height:1.05;height:4.6rem${k==='r'?';margin-right:4px':''}">${E[k]}</span><span class="text-sm">${N[k]}</span></button>`).join('')}</div>
     <button ${sel&&!busy?'':'disabled'} onclick="play('${m.id}')" class="w-full mt-3 py-4 rounded-2xl font-black text-lg ${sel?'bg-yellow-300 text-yellow-950':'bg-white/20 text-white/60'}">${busy?'Envoi…':'Valider mon coup 🔒'}</button>
     <p class="text-xs text-center mt-2 opacity-80">Une fois validé, le coup ne peut plus être changé.</p>
     <div class="text-center mt-5"><button onclick="quitT('${m.id}')" class="px-4 py-2 rounded-xl border border-white/40 text-sm font-semibold opacity-90">🏳️ Abandonner le tournoi</button></div>`;
