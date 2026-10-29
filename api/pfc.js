@@ -213,7 +213,9 @@ module.exports = async (req, res) => {
       const cfg = await redis.get('pfc:cfg'), p = cfg && cfg.players.find((x) => x.id === b.id);
       if (!p) return res.status(400).json({ error: 'joueur' });
       const hk = helpKey(cfg, p.id);
-      if (!(await redis.get(hk))) await redis.set(hk, Date.now(), { ex: 7 * 86400 });
+      const st = String(b.station == null ? '' : b.station).replace(/[<>]/g, '').trim().slice(0, 24);   // numéro de station (facultatif) pour que l'organisateur retrouve la personne
+      const old = await redis.get(hk);
+      if (!old || st) await redis.set(hk, { t: (old && old.t) || Date.now(), st: st || (old && old.st) || '' }, { ex: 7 * 86400 });
       return res.json({ ok: 1 });
     }
 
