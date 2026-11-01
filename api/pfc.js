@@ -92,10 +92,10 @@ async function svResults(cfg) {
 const pzKey = (cfg) => 'pfc:prize:' + (cfg.tid || '');
 // Textes du lot : jamais présents dans la page, envoyés seulement au vainqueur de la finale (et à l'organisateur pour son résumé)
 const PZ_UI = {
-  intro: "Pour fêter ta victoire, l'organisateur est heureux de t'offrir une carte cadeau de 20 €.",
+  intro: "Pour fêter ta victoire, l'organisateur est heureux de t'offrir une carte cadeau de 10 €.",
   ask: '🎁 Que souhaites-tu faire de ton lot ?',
-  take: { label: '🛍️ Recevoir ma carte cadeau (20 €)', quote: '« Merci pour ce tournoi ! Je récupère mon lot. »', confirm: 'Confirmer : tu souhaites recevoir ta carte cadeau de 20 € ?\n\nTon choix sera définitif.', done: "✅ C'est noté : tu as choisi de recevoir ta carte cadeau (20 €).", sub: "L'organisateur te la remettra.", admin: '🛍️ souhaite <b>recevoir</b> la carte cadeau (20 €)' },
-  give: { label: '🤝 Offrir mon lot pour le prochain tournoi', quote: "« Je choisis d'offrir cette valeur pour enrichir la dotation du prochain vainqueur (cagnotte portée à 40 €) ! »", confirm: 'Confirmer : tu souhaites offrir ton lot pour le prochain tournoi (cagnotte portée à 40 €) ?\n\nTon choix sera définitif.', done: "✅ Merci pour ce beau geste ! Tu as choisi d'offrir ton lot.", sub: 'La cagnotte du prochain tournoi sera portée à 40 €.', admin: '🤝 <b>offre</b> son lot : cagnotte du prochain tournoi portée à 40 €' },
+  take: { label: '🛍️ Recevoir ma carte cadeau (10 €)', quote: '« Merci pour ce tournoi ! Je récupère mon lot. »', confirm: 'Confirmer : tu souhaites recevoir ta carte cadeau de 10 € ?\n\nTon choix sera définitif.', done: "✅ C'est noté : tu as choisi de recevoir ta carte cadeau (10 €).", sub: "L'organisateur te la remettra.", admin: '🛍️ souhaite <b>recevoir</b> la carte cadeau (10 €)' },
+  give: { label: '🤝 Offrir mon lot pour le prochain tournoi', quote: "« Je choisis d'offrir cette valeur pour enrichir la dotation du prochain vainqueur (cagnotte portée à 25 €) ! »", confirm: 'Confirmer : tu souhaites offrir ton lot pour le prochain tournoi (cagnotte portée à 25 €) ?\n\nTon choix sera définitif.', done: "✅ Merci pour ce beau geste ! Tu as choisi d'offrir ton lot.", sub: 'La cagnotte du prochain tournoi sera portée à 25 €.', admin: '🤝 <b>offre</b> son lot : cagnotte du prochain tournoi portée à 25 €' },
 };
 // Petits lots : perdant de la finale (friandise précisée par lui, eau, ou rien) et vainqueur de la petite finale (eau ou rien). Mêmes règles : textes jamais dans la page, choix définitif.
 const pzKey2 = (cfg) => 'pfc:prize:' + (cfg.tid || '') + ':2', pzKey3 = (cfg) => 'pfc:prize:' + (cfg.tid || '') + ':3';
