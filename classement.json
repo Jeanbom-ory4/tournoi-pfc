@@ -36,6 +36,15 @@
    "R16": 25,
    "R32": 12,
    "R1": 3
+  },
+  "master": {
+   "label": "Master Final",
+   "V": 750,
+   "F": 490,
+   "3": 340,
+   "4": 300,
+   "SF": 320,
+   "QF": 150
   }
  },
  "tournois": [
@@ -249,5 +258,6 @@
   "nom": "Pierre-Feuille-Ciseaux",
   "type": "p250",
   "pf": true
- }
+ },
+ "saison": 2026
 }
