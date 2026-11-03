@@ -340,8 +340,25 @@ function clCompute(mode){
   if(!l.length)return mode!=='g'?{rows:[],tn,yr}:null;
   let r=0;const rows=l.map(([n,p],i)=>{if(i===0||p!==l[i-1][1])r=i+1;return {n,p,r}});
   rows.forEach(x=>x.tie=rows.filter(y=>y.r===x.r).length>1);
+  // variation depuis le dernier tournoi joué (+ gagnés ; − aussi quand des points de plus d'un an sortent du classement général)
+  const last=mode==='q'?null:tn.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0)[0];
+  if(last){
+    const T=new Date(last.date+'T12:00:00').getTime(),pt={};
+    for(const t of CL.tournois){
+      if(t===last)continue;
+      const d=new Date(t.date+'T12:00:00');
+      if(mode==='s'){if(d.getFullYear()!==yr)continue}else if(d.getTime()<T-365*864e5||d.getTime()>T)continue;
+      const b=CL.bareme[t.type]||{};
+      for(const [n,st] of t.res)pt[n]=(pt[n]||0)+(b[st]||0);
+    }
+    rows.forEach(x=>x.d=x.p-(pt[x.n]||0));
+    // places avant ce dernier tournoi (pour les flèches ▲▼) ; pas de flèches s'il n'y a eu aucun tournoi avant
+    const pl=Object.entries(pt).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]),pr={};
+    pl.forEach(([n,p],i)=>{pr[n]=(i&&p===pl[i-1][1])?pr[pl[i-1][0]]:i+1});
+    if(pl.length)rows.forEach(x=>x.m=pr[x.n]==null?'new':pr[x.n]-x.r);
+  }
   if(mode==='s'){const qs=new Set(clCompute('q').rows.filter(x=>x.r<=8).map(x=>x.n));rows.forEach(x=>x.q=qs.has(x.n))}
-  return {rows,tn,yr};
+  return {rows,tn,yr,last};
 }
 function classementView(){
   const cg=clCompute('g');if(!cg)return '';
@@ -349,7 +366,7 @@ function classementView(){
   const fd=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
   const my=S.cfg&&me()?raw(me()):null,medal=['🥇','🥈','🥉'];
   const show=clAll?c.rows:c.rows.slice(0,10),hasM=c.tn.some(t=>t.type==='master');
-  const row=(x,i)=>`${race&&!hasM&&x.r>8&&(i===0||show[i-1].r<=8)?'<div class="text-center text-xs opacity-80 my-1" style="border-top:2px dashed rgba(255,255,255,.55);padding-top:2px">Limite de qualification (Top 8)</div>':''}<div class="flex items-center justify-between gap-2 px-2 py-1.5 rounded ${x.n===my?'ring-1 ring-yellow-300 bg-white/10':''}"><span class="flex items-center min-w-0"><span style="min-width:2.6rem" class="opacity-90 text-sm">${x.r<=3?medal[x.r-1]:x.r+(x.tie?'':'.')}${x.tie?'<span class="opacity-70">=</span>':''}</span><span class="truncate font-semibold">${esc(x.n)}</span>${race&&x.q?'<span class="ml-1 flex-none" title="Qualifié pour le Master Final">✅</span>':''}</span><b>${x.p} pts</b></div>`;
+  const row=(x,i)=>`${race&&!hasM&&x.r>8&&(i===0||show[i-1].r<=8)?'<div class="text-center text-xs opacity-80 my-1" style="border-top:2px dashed rgba(255,255,255,.55);padding-top:2px">Limite de qualification (Top 8)</div>':''}<div class="flex items-center justify-between gap-2 px-2 py-1.5 rounded ${x.n===my?'ring-1 ring-yellow-300 bg-white/10':''}"><span class="flex items-center min-w-0"><span style="min-width:2.6rem" class="opacity-90 text-sm">${x.r<=3?medal[x.r-1]:x.r+(x.tie?'':'.')}${x.tie?'<span class="opacity-70">=</span>':''}${x.m==null?'':x.m==='new'?'<span style="display:block;font-size:10px;line-height:1;font-weight:700;color:#fde68a">NEW</span>':x.m>0?'<span style="display:block;font-size:10px;line-height:1;font-weight:700;color:#6ee7b7">▲'+x.m+'</span>':x.m<0?'<span style="display:block;font-size:10px;line-height:1;font-weight:700;color:#fda4af">▼'+(-x.m)+'</span>':'<span style="display:block;font-size:10px;line-height:1;opacity:.6">=</span>'}</span><span class="truncate font-semibold">${esc(x.n)}</span>${race&&x.q?'<span class="ml-1 flex-none" title="Qualifié pour le Master Final">✅</span>':''}</span><span class="flex-none whitespace-nowrap text-right leading-tight"><b>${x.p} pts</b>${x.d!=null?`<span class="block text-xs font-bold ${x.d>0?'text-emerald-300':x.d<0?'text-rose-300':'opacity-60'}">${x.d>0?'+'+x.d:x.d<0?'−'+Math.abs(x.d):'±0'}</span>`:''}</span></div>`;
   const parts=(b,noPF)=>[['vainqueur',b.V],['finaliste',b.F],...(noPF?[['demi-finale',b.SF]]:[['3e',b['3']],['4e',b['4']]]),['quart de finale',b.QF],['huitième',b.R16],['seizième',b.R32],['premier tour',b.R1]].filter(x=>x[1]!=null);
   const line=(lab,b,noPF)=>`<p class="mt-2"><b>${lab}</b> : ${parts(b,noPF).map(x=>x[0]+' '+x[1]).join(' · ')}</p>`;
   const ec=CL.enCours&&CL.bareme[CL.enCours.type];
@@ -360,6 +377,7 @@ function classementView(){
     <div class="flex gap-2 mt-3 mb-2">${tabBtn('g','🌍 Classement général')}${tabBtn('s','🏁 Course au Master')}</div>
     ${intro}
     <p class="mb-2 text-sm rounded-xl bg-yellow-300/20 p-2">👑 Les 8 premiers de la course se retrouvent au <b>Master Final</b> (voir plus bas) : son vainqueur devient <b>Maître des Maîtres</b>. À la fin de l'année, une fois le Master Final joué, le joueur en tête de la course (ses points compris) reçoit le titre de <b>Grand Maître des Tournois</b>.</p>
+    ${c.last?`<p class="text-xs opacity-80 mb-1">Variation depuis le dernier tournoi : <b>${esc(c.last.nom)}</b> (${fd(c.last.date)}). ▲▼ = places gagnées ou perdues.</p>`:''}
     <div class="mb-2">${c.rows.length?show.map(row).join(''):'<p class="text-sm opacity-90 text-center py-2">Aucun résultat pour cette saison pour le moment.</p>'}</div>
     ${c.rows.length>10?`<div class="text-center mb-2"><button onclick="clAll=!clAll;render()" class="px-3 py-1.5 rounded-xl card text-xs font-bold">${clAll?'Réduire':'Voir tout ('+c.rows.length+' joueurs)'}</button></div>`:''}
     <p class="text-xs opacity-80">Tournois pris en compte : ${c.tn.length?c.tn.map(t=>esc(t.nom)+' ('+fd(t.date)+')').join(' ; '):'aucun'}.</p>
