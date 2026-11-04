@@ -303,7 +303,7 @@ module.exports = async (req, res) => {
     }
 
     // --- Actions organisateur (clé ADMIN_KEY) ---
-    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'newpin', 'reorder'].includes(a)) {
+    if (['create', 'reset', 'admin', 'extend', 'forfeit', 'reinstate', 'start', 'unlock', 'schedule', 'addplayers', 'removeplayer', 'renameplayer', 'newpin', 'reorder'].includes(a)) {
       if (!ADMIN) return res.status(500).json({ error: 'Variable ADMIN_KEY absente sur ce déploiement : vérifie son nom exact, coche Production, puis redéploie.' });
       if (!isAdmin(b.key)) return res.status(401).json({ error: 'admin' });
       if (a === 'start') {
@@ -322,6 +322,16 @@ module.exports = async (req, res) => {
           if (b.loser !== m.a && b.loser !== m.b) return res.status(400).json({ error: 'joueur' });
           await finish(cfg, m, b.loser === m.a ? m.b : m.a, b.loser);
         }
+        return res.json({ ok: 1 });
+      }
+      if (a === 'reinstate') {   // remet en jeu un joueur éliminé à tort pour « délai dépassé » (ex. après une panne) : le match reprend là où il en était ; le coup que l'adversaire avait déjà joué est annulé (il rejoue)
+        const cfg = await redis.get('pfc:cfg'), key = 'pfc:m:' + b.id, m = await redis.get(key);
+        if (!cfg || !m || !m.w || !m.ff || m.ab === m.ff || m.id === 'third') return res.status(400).json({ error: 'match' });
+        if (m.r >= cfg.rounds - 2) return res.status(409).json({ error: 'tardif' });   // demi-finales et finale : à traiter à la main
+        const { t, side } = route(cfg, m.r, m.i), nk = 'pfc:m:' + mk(m.r + 1, t), nm = await redis.get(nk);
+        if (!nm || nm[side] !== m.w || nm.w || nm.pend || nm.bye || (nm.hist && nm.hist.length)) return res.status(409).json({ error: 'suite' });   // le vainqueur a déjà commencé le tour suivant
+        nm[side] = null; await redis.set(nk, nm);
+        m.w = null; delete m.ff; m.pend = null; m.due = null; await redis.set(key, m);
         return res.json({ ok: 1 });
       }
       if (a === 'schedule') {
