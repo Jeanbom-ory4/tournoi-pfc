@@ -250,7 +250,7 @@ async function refresh(){
   if(souv){if(!loaded){loaded=true;render()}return}   // mode souvenir : rien à rafraîchir
   if(loaded&&tourOver()&&!inOrga())return;   // tournoi terminé : plus de rafraîchissement automatique (le chargement initial a déjà eu lieu)
   lastRef=Date.now();
-  if(tab==='apropos'&&loaded)return;   // « À propos » : contenu fixe, aucun rafraîchissement ni signal de présence (économie de requêtes)
+  if((tab==='apropos'||tab==='calendrier')&&loaded)return;   // « À propos » : contenu fixe, aucun rafraîchissement ni signal de présence (économie de requêtes)
   const f=document.activeElement;
   if(f&&/TEXTAREA|INPUT/.test(f.tagName)&&f.type!=='checkbox'&&f.id!=='pin')return;   // ne pas écraser une saisie en cours
   try{S=await loadState();loadErr=null}catch(e){loadErr=e.message+(e.status?' (HTTP '+e.status+')':'')}
@@ -279,10 +279,10 @@ topEl.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
 document.body.appendChild(topEl);
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
-  const hk=(tab==='jeu'||tab==='tableau'||tab==='apropos');   // rubriques concernées : Jouer, Tableau et À propos. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
+  const hk=(tab==='jeu'||tab==='tableau'||tab==='apropos'||tab==='calendrier');   // rubriques concernées : Jouer, Tableau et À propos. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
   const on=hk&&loaded&&rem>70&&!document.hidden;
   hintEl.style.opacity=on?'1':'0';hintEl.style.pointerEvents=on?'auto':'none';
-  const up=(tab==='tableau'||tab==='apropos')&&loaded&&window.scrollY>300&&!document.hidden;
+  const up=(tab==='tableau'||tab==='apropos'||tab==='calendrier')&&loaded&&window.scrollY>300&&!document.hidden;
   topEl.style.opacity=up?'1':'0';topEl.style.pointerEvents=up?'auto':'none';
 }
 window.addEventListener('scroll',hintUpdate,{passive:true});window.addEventListener('resize',hintUpdate);
@@ -308,7 +308,7 @@ setInterval(()=>{
   if(tourOver()&&!inOrga())return;   // tournoi terminé : on n'interroge plus le serveur
   const slow=slowPoll();
   if(slow&&Date.now()-lastRef<28500)return;   // on saute 2 passages sur 3 : un rafraîchissement toutes les ~30 s
-  if(tab==='apropos'){if(me()&&!slow&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
+  if(tab==='apropos'||tab==='calendrier'){if(me()&&!slow&&Date.now()-lastPing>=18000){lastPing=Date.now();api('hb',{hid}).catch(()=>{})}return}   // « À propos » : pas de rafraîchissement, mais le joueur reste « en ligne » (1 commande toutes les ~20 s)
   refresh();
 },10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!souv){lastAct=Date.now();if(paused){paused=false;idleBar.style.display='none'}lastPing=0;refresh()}});
@@ -323,7 +323,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!souv){la
 })();
 
 // Classement annuel : fichier fixe classement.json (aucun appel au serveur). S'il est absent, la sous-rubrique n'apparaît pas.
-(async()=>{try{const r=await fetch('classement.json',{cache:'no-cache'});if(!r.ok)return;const j=await r.json();if(j&&j.bareme&&Array.isArray(j.tournois)){CL=j;if(loaded&&tab==='apropos')render()}}catch(e){}})();
+(async()=>{try{const r=await fetch('classement.json',{cache:'no-cache'});if(!r.ok)return;const j=await r.json();if(j&&j.bareme&&Array.isArray(j.tournois)){CL=j;if(loaded&&(tab==='apropos'||tab==='calendrier'))render()}}catch(e){}})();
 // Points sur les 12 derniers mois glissants ; à égalité de points, même rang (ex æquo)
 function clCompute(mode){
   if(!CL)return null;
@@ -397,12 +397,12 @@ function render(){
     const cid=me(),cf=S.matches[mk(S.cfg.rounds-1,0)],ck='pfc_cgo_'+(S.cfg.tid||'')+'_'+cid;
     if(cid&&cf&&cf.w===cid&&ls.get(ck)!=='1'){ls.set(ck,'1');if(tab!=='jeu'){tab='jeu';watch=null;bigBoard=false;window.scrollTo(0,0)}}
   }
-  const tabs=souv?[['tableau','🏆 Tableau'],['apropos','ℹ️ À propos']]:[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
+  const tabs=souv?[['tableau','🏆 Tableau'],['calendrier','📅 Calendrier'],['apropos','ℹ️ À propos']]:[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['calendrier','📅 Calendrier'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const souvBar=souv?wrap('<p class="text-center font-bold">🕰 Souvenir du tournoi</p><p class="text-center text-sm mt-1 opacity-90">Le tournoi est terminé : voici le tableau final et tous les résultats.</p>'):'';
-  const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-3 px-1 text-sm rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}">${t[1]}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
+  const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-2 rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}" style="font-size:11px;line-height:1.15;padding-left:2px;padding-right:2px"><span class="block" style="font-size:18px;line-height:1;margin-bottom:2px">${t[1].split(' ')[0]}</span>${t[1].slice(t[1].indexOf(' ')+1)}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
   const sh=$('#shell');if(sh)sh.style.maxWidth=window.innerWidth>=768?'42rem':'28rem';   // largeur fixée en style (indépendant de Tailwind)
-  app.innerHTML=nav+souvBar+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():adminView());
+  app.innerHTML=nav+souvBar+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():tab==='calendrier'?calView():adminView());
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
@@ -429,7 +429,7 @@ function softScroll(to){
   const step=now=>{const k=Math.min(1,(now-t0)/dur);window.scrollTo(0,from+d*ease(k));if(k<1)softRaf=requestAnimationFrame(step);else stop()};
   softRaf=requestAnimationFrame(step);
 }
-function setTab(t){const was=tab,hadW=!!watch;tab=t;if(t==='jeu')jeuScroll=true;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if(was==='apropos'&&t!=='apropos'){lastPing=0;refresh()};if(t!==was||hadW)hpush()}
+function setTab(t){const was=tab,hadW=!!watch;tab=t;if(t==='jeu')jeuScroll=true;watch=null;if(t!=='tableau')bigBoard=false;if(t==='admin'&&adminKey){lastAdm=Date.now();api('admin').then(a=>{adm=a;render()}).catch(()=>{})}render();if((was==='apropos'||was==='calendrier')&&t!=='apropos'&&t!=='calendrier'){lastPing=0;refresh()};if(t!==was||hadW)hpush()}
 
 /* ---------- Joueur ---------- */
 function myMatch(){
@@ -1089,6 +1089,19 @@ function matchView(k){
     <div class="flex items-center justify-around gap-2 my-3"><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(A,m.a&&!m.w?fl(m.a):'')}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.a)}</span>`:''}</div><div class="text-center" style="min-width:5.5rem">${mpScore(`${m.sa} - ${m.sb}`,"text-4xl font-black",mpOf(m).a,mpOf(m).b,"s|"+m.id+"|")}</div><div class="flex-1 text-center font-bold leading-tight break-words">${pn2(B,m.b&&!m.w?fl(m.b):'')}${op?`<span class="block text-xs font-semibold mt-1.5 opacity-95">${presTxt(m.b)}</span>`:''}</div></div>${mpNote(m,'sn|'+m.id)}${st}
     ${hist?`<div class="mt-4"><div class="text-xs font-bold opacity-90 mb-1">Tours joués</div>${hist}</div>`:'<p class="text-center text-sm mt-3 opacity-80">Aucun tour joué pour le moment.</p>'}
     <p class="text-xs text-center mt-3 opacity-70">👁 Mode spectateur : un coup en attente reste secret tant que les deux joueurs n'ont pas joué.</p>`);
+}
+
+// Rubrique « Calendrier » : tournois passés (classement.json), en cours et à venir (champ « aVenir », avec lien d'inscription facultatif « url »)
+function calView(){
+  if(!CL)return wrap('<h2 class="text-xl font-black text-center mb-3">📅 Calendrier</h2><p class="text-center text-sm opacity-90">Le calendrier n\'est pas disponible pour le moment.</p>');
+  const fdt=d=>d?new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'';
+  const bl=t=>CL.bareme[t]||{},pts=t=>bl(t).V?`<span class="opacity-80"> · ${bl(t).label} · ${bl(t).V} pts au vainqueur</span>`:'';
+  const card=(bg,inner)=>`<div class="rounded-xl p-3 mb-2" style="background:${bg}">${inner}</div>`;
+  const sec=(t,x)=>x?`<p class="font-bold mt-3 mb-1">${t}</p>${x}`:'';
+  const ec=CL.enCours?card('rgba(52,211,153,.28)',`<p class="font-bold" style="line-height:1.9">🔴 ${esc(CL.enCours.nom)} <span class="text-xs font-bold rounded-full px-2 py-0.5" style="background:#fff;color:#065f46;margin-left:6px;white-space:nowrap;display:inline-block">EN COURS</span></p><p class="text-xs mt-0.5">${bl(CL.enCours.type).label?bl(CL.enCours.type).label+' · '+bl(CL.enCours.type).V+' pts au vainqueur':''}</p><button onclick="setTab('jeu')" style="margin-top:10px" class="px-4 py-2 rounded-xl bg-white text-purple-800 font-bold text-sm">🎮 Jouer</button>`):'';
+  const av=(CL.aVenir||[]).slice().sort((a,b)=>(a.date||'9').localeCompare(b.date||'9')).map(t=>card('rgba(56,189,248,.28)',`<p class="font-bold">⏳ ${esc(t.nom)}</p><p class="text-xs mt-0.5">${t.date?'📅 '+fdt(t.date):'Date à venir'}${pts(t.type)}</p>${t.url?`<a href="${esc(t.url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px" class="px-4 py-2 rounded-xl bg-white text-purple-800 font-bold text-sm">✍️ S'inscrire</a><p class="text-xs mt-1 opacity-80">S'ouvre dans une nouvelle page.</p>`:'<p class="text-xs mt-1 opacity-80">Les inscriptions seront ouvertes prochainement.</p>'}`)).join('');
+  const pa=CL.tournois.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t=>{const w=(t.res||[]).filter(r=>r[1]==='V').map(r=>esc(r[0])).join(' & ');return card('rgba(255,255,255,.12)',`<p class="font-bold">✅ ${esc(t.nom)}</p><p class="text-xs mt-0.5">📅 ${fdt(t.date)}${pts(t.type)}</p>${w?`<p class="text-sm mt-1">🏆 Vainqueur : <b>${w}</b></p>`:''}`)}).join('');
+  return wrap('<h2 class="text-xl font-black text-center mb-1">📅 Calendrier</h2><p class="text-center text-sm opacity-90 mb-1">Tous les tournois de la saison '+(CL.saison||'')+' : passés, en cours et à venir.</p>'+sec('En cours',ec)+sec('À venir',av)+sec('Passés',pa));
 }
 
 function aboutView(){

@@ -265,7 +265,8 @@
    "nom": "Blind Test",
    "type": "p500",
    "date": "2026-11-16",
-   "pf": true
+   "pf": true,
+   "url": "https://tournoi-blindtest.vercel.app/"
   }
  ]
 }
