@@ -5,7 +5,8 @@
 <title>Master Chifoumi — Édition RSP 2026</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>
+<style>@keyframes livedot{0%,100%{opacity:1}50%{opacity:.25}}.livedot{display:inline-block;animation:livedot 1.8s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
+
 :root{--bg1:#2e1065;--bg2:#be185d;--card:rgba(255,255,255,.14)}
 html{background:#a0165f}   /* couleur de secours : si une zone n'est pas encore repeinte (défilement rapide, barre d'adresse qui se masque), elle reste rose et non blanche */
 body::before{content:"";position:fixed;left:0;right:0;top:0;height:100vh;height:100lvh;z-index:-1;background:linear-gradient(160deg,var(--bg1),var(--bg2));pointer-events:none}   /* dégradé sur toute la plus grande hauteur d'écran possible (barre d'adresse masquée) */
@@ -1098,7 +1099,7 @@ function calView(){
   const bl=t=>CL.bareme[t]||{},pts=t=>bl(t).V?`<span class="opacity-80"> · ${bl(t).label} · ${bl(t).V} pts au vainqueur</span>`:'';
   const card=(bg,inner)=>`<div class="rounded-xl p-3 mb-2" style="background:${bg}">${inner}</div>`;
   const sec=(t,x)=>x?`<p class="font-bold mt-3 mb-1">${t}</p>${x}`:'';
-  const ec=CL.enCours?card('rgba(52,211,153,.28)',`<p class="font-bold" style="line-height:1.9">🔴 ${esc(CL.enCours.nom)} <span class="text-xs font-bold rounded-full px-2 py-0.5" style="background:#fff;color:#065f46;margin-left:6px;white-space:nowrap;display:inline-block">EN COURS</span></p><p class="text-xs mt-0.5">${bl(CL.enCours.type).label?bl(CL.enCours.type).label+' · '+bl(CL.enCours.type).V+' pts au vainqueur':''}</p>`):'';
+  const ec=CL.enCours?card('rgba(52,211,153,.28)',`<p class="font-bold" style="line-height:1.9"><span class="livedot">🔴</span> ${esc(CL.enCours.nom)} <span class="text-xs font-bold rounded-full px-2 py-0.5" style="background:#fff;color:#065f46;margin-left:6px;white-space:nowrap;display:inline-block">EN COURS</span></p><p class="text-xs mt-0.5">${bl(CL.enCours.type).label?bl(CL.enCours.type).label+' · '+bl(CL.enCours.type).V+' pts au vainqueur':''}</p>`):'';
   const av=(CL.aVenir||[]).slice().sort((a,b)=>(a.date||'9').localeCompare(b.date||'9')).map(t=>card('rgba(56,189,248,.28)',`<p class="font-bold">⏳ ${esc(t.nom)}</p><p class="text-xs mt-0.5">${t.date?'🗓️ '+fdt(t.date):'Date à venir'}${pts(t.type)}</p>${t.url?`<a href="${esc(t.url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px" class="px-4 py-2 rounded-xl bg-white text-purple-800 font-bold text-sm">✍️ S'inscrire</a><p class="text-xs mt-1 opacity-80">S'ouvre dans une nouvelle page.</p>`:'<p class="text-xs mt-1 opacity-80">Les inscriptions seront ouvertes prochainement.</p>'}`)).join('');
   const pa=CL.tournois.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t=>{const w=(t.res||[]).filter(r=>r[1]==='V').map(r=>esc(r[0])).join(' & ');return card('rgba(255,255,255,.12)',`<p class="font-bold">✅ ${esc(t.nom)}</p><p class="text-xs mt-0.5">🗓️ ${fdt(t.date)}${pts(t.type)}</p>${w?`<p class="text-sm mt-1">🏆 Vainqueur : <b>${w}</b></p>`:''}`)}).join('');
   return wrap('<h2 class="text-xl font-black text-center mb-1">🗓️ Calendrier</h2><p class="text-center text-sm opacity-90 mb-1">Tous les tournois de la saison '+(CL.saison||'')+' : passés, en cours et à venir.</p>'+sec('En cours',ec)+sec('À venir',av)+sec('Passés',pa));
