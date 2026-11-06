@@ -14,7 +14,7 @@
    "R1": 10
   },
   "p500": {
-   "label": "Tournoi 500",
+   "label": "Moyen tournoi",
    "V": 500,
    "F": 325,
    "3": 225,
@@ -259,5 +259,13 @@
   "type": "p250",
   "pf": true
  },
- "saison": 2026
+ "saison": 2026,
+ "aVenir": [
+  {
+   "nom": "Blind Test",
+   "type": "p500",
+   "date": "2026-11-16",
+   "pf": true
+  }
+ ]
 }
