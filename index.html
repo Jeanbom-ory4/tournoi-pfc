@@ -58,6 +58,8 @@ button{touch-action:manipulation}
 #scrollHint{position:fixed;right:max(14px,calc(50% - 14rem + 10px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;padding:0;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(20,10,35,.72);color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s ease}
 #topBtn{position:fixed;right:max(14px,calc(50% - 14rem + 10px));bottom:calc(14px + 2.5rem + 10px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;padding:0;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(20,10,35,.72);color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s ease}
 #topBtn svg{width:1.3rem;height:1.3rem}
+/* Ordinateur : les boutons monter/descendre sortent de la page et se placent dans la marge vide, à droite de l'appli */
+@media (min-width:768px) and (pointer:fine){#scrollHint,#topBtn{right:max(10px,calc(50% - 21rem - 2.5rem - 14px))}}
 #scrollHint svg{width:1.3rem;height:1.3rem;animation:hnt 1.4s ease-in-out infinite}
 @keyframes hnt{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
 @media (prefers-reduced-motion:reduce){#scrollHint svg{animation:none}}
