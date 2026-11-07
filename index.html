@@ -5,7 +5,8 @@
 <title>Master Chifoumi — Édition RSP 2026</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>@keyframes livedot{0%,100%{opacity:1}50%{opacity:.25}}.livedot{display:inline-block;animation:livedot 3.2s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
+<style>.navrow{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}.navrow::-webkit-scrollbar{display:none}.navrow .navb{flex:0 0 calc((100% - 24px)/4)}
+@keyframes livedot{0%,100%{opacity:1}50%{opacity:.25}}.livedot{display:inline-block;animation:livedot 3.2s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
 
 :root{--bg1:#2e1065;--bg2:#be185d;--card:rgba(255,255,255,.14)}
 html{background:#a0165f}   /* couleur de secours : si une zone n'est pas encore repeinte (défilement rapide, barre d'adresse qui se masque), elle reste rose et non blanche */
@@ -400,10 +401,12 @@ function render(){
   }
   const tabs=souv?[['tableau','🏆 Tableau'],['calendrier','🗓️ Calendrier'],['apropos','ℹ️ À propos']]:[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['calendrier','🗓️ Calendrier'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const souvBar=souv?wrap('<p class="text-center font-bold">🕰 Souvenir du tournoi</p><p class="text-center text-sm mt-1 opacity-90">Le tournoi est terminé : voici le tableau final et tous les résultats.</p>'):'';
-  const nav=`<div class="flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="flex-1 py-2 rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}" style="font-size:11px;line-height:1.15;padding-left:2px;padding-right:2px"><span class="block" style="font-size:18px;line-height:1;margin-bottom:2px">${t[1].split(' ')[0]}</span>${t[1].slice(t[1].indexOf(' ')+1)}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
+  const nav=`<div id="navRow" class="navrow flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="${tabs.length>4?'navb ':''}flex-1 py-2 rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}" style="font-size:11px;line-height:1.15;padding-left:2px;padding-right:2px"><span class="block" style="font-size:18px;line-height:1;margin-bottom:2px">${t[1].split(' ')[0]}</span>${t[1].slice(t[1].indexOf(' ')+1)}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
   const sh=$('#shell');if(sh)sh.style.maxWidth=window.innerWidth>=768?'42rem':'28rem';   // largeur fixée en style (indépendant de Tailwind)
+  const nsl=(document.getElementById('navRow')||{}).scrollLeft||0;
   app.innerHTML=nav+souvBar+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():tab==='calendrier'?calView():adminView());
+  {const nr=document.getElementById('navRow');if(nr){nr.scrollLeft=nsl;const ab=[...nr.children].find(b=>b.classList.contains('bg-white'));if(ab){const l=ab.offsetLeft-nr.offsetLeft,r=l+ab.offsetWidth;if(r>nr.scrollLeft+nr.clientWidth)nr.scrollLeft=r-nr.clientWidth;else if(l<nr.scrollLeft)nr.scrollLeft=l}}}   // le bandeau d'onglets se fait glisser : sa position est conservée, et l'onglet actif reste visible
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
@@ -1093,6 +1096,7 @@ function matchView(k){
 }
 
 // Rubrique « Calendrier » : tournois passés (classement.json), en cours et à venir (champ « aVenir », avec lien d'inscription facultatif « url »)
+function selfUrl(u){try{return new URL(u,location.href).host===location.host}catch(e){return false}}
 function calView(){
   if(!CL)return wrap('<h2 class="text-xl font-black text-center mb-3">🗓️ Calendrier</h2><p class="text-center text-sm opacity-90">Le calendrier n\'est pas disponible pour le moment.</p>');
   const fdt=d=>d?new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'';
@@ -1100,7 +1104,7 @@ function calView(){
   const card=(bg,inner)=>`<div class="rounded-xl p-3 mb-2" style="background:${bg}">${inner}</div>`;
   const sec=(t,x)=>x?`<p class="font-bold mt-3 mb-1">${t}</p>${x}`:'';
   const ec=CL.enCours?card('rgba(52,211,153,.28)',`<p class="font-bold" style="line-height:1.9"><span class="livedot">🔴</span> ${esc(CL.enCours.nom)} <span class="text-xs font-bold rounded-full px-2 py-0.5" style="background:#fff;color:#065f46;margin-left:6px;white-space:nowrap;display:inline-block">EN COURS</span></p><p class="text-xs mt-0.5">${bl(CL.enCours.type).label?bl(CL.enCours.type).label+' · '+bl(CL.enCours.type).V+' pts au vainqueur':''}</p>`):'';
-  const av=(CL.aVenir||[]).slice().sort((a,b)=>(a.date||'9').localeCompare(b.date||'9')).map(t=>card('rgba(56,189,248,.28)',`<p class="font-bold">⏳ ${esc(t.nom)}</p><p class="text-xs mt-0.5">${t.date?'🗓️ '+fdt(t.date):'Date à venir'}${pts(t.type)}</p>${t.url?`<a href="${esc(t.url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px" class="px-4 py-2 rounded-xl bg-white text-purple-800 font-bold text-sm">✍️ S'inscrire</a><p class="text-xs mt-1 opacity-80">S'ouvre dans une nouvelle page.</p>`:'<p class="text-xs mt-1 opacity-80">Les inscriptions seront ouvertes prochainement.</p>'}`)).join('');
+  const av=(CL.aVenir||[]).slice().sort((a,b)=>(a.date||'9').localeCompare(b.date||'9')).map(t=>card('rgba(56,189,248,.28)',`<p class="font-bold">⏳ ${esc(t.nom)}</p><p class="text-xs mt-0.5">${t.date?'🗓️ '+fdt(t.date):'Date à venir'}${pts(t.type)}</p>${t.url&&!selfUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px" class="px-4 py-2 rounded-xl bg-white text-purple-800 font-bold text-sm">✍️ S'inscrire</a><p class="text-xs mt-1 opacity-80">S'ouvre dans une nouvelle page.</p>`:''}`)).join('');
   const pa=CL.tournois.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t=>{const w=(t.res||[]).filter(r=>r[1]==='V').map(r=>esc(r[0])).join(' & ');return card('rgba(255,255,255,.12)',`<p class="font-bold">✅ ${esc(t.nom)}</p><p class="text-xs mt-0.5">🗓️ ${fdt(t.date)}${pts(t.type)}</p>${w?`<p class="text-sm mt-1">🏆 Vainqueur : <b>${w}</b></p>`:''}`)}).join('');
   return wrap('<h2 class="text-xl font-black text-center mb-1">🗓️ Calendrier</h2><p class="text-center text-sm opacity-90 mb-1">Tous les tournois de la saison '+(CL.saison||'')+' : passés, en cours et à venir.</p>'+sec('En cours',ec)+sec('À venir',av)+sec('Passés',pa));
 }
