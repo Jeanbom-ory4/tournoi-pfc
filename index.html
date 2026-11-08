@@ -279,7 +279,10 @@ document.body.appendChild(hintEl);
 // Bouton « remonter en haut » : rubriques Tableau et À propos (pages longues), une fois qu'on est descendu
 const topEl=document.createElement('button');topEl.id='topBtn';topEl.type='button';topEl.setAttribute('aria-label','Remonter en haut de la page');
 topEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
-topEl.onclick=()=>window.scrollTo({top:0,behavior:'instant'});   // saut direct en haut, sans défilement rapide
+topEl.onclick=()=>{   // retour en haut sans défilement visible : la page s'efface en 0,15 s, saute en haut, puis réapparaît en fondu en 0,15 s
+  const b=document.body;b.style.transition='opacity .15s ease';b.style.opacity='0';
+  setTimeout(()=>{window.scrollTo(0,0);b.style.opacity='1';setTimeout(()=>{b.style.transition='';b.style.opacity=''},200)},150);
+};
 document.body.appendChild(topEl);
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
