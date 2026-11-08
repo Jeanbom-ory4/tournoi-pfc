@@ -418,7 +418,8 @@ function render(){
   const sh=$('#shell');if(sh)sh.style.maxWidth=window.innerWidth>=768?'42rem':'28rem';   // largeur fixée en style (indépendant de Tailwind)
   const nsl=(document.getElementById('navRow')||{}).scrollLeft||0;
   app.innerHTML=nav+souvBar+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():tab==='calendrier'?calView():adminView());
-  {const nr=document.getElementById('navRow');if(nr){nr.scrollLeft=nsl;const ab=[...nr.children].find(b=>b.classList.contains('bg-white'));if(ab){const l=ab.offsetLeft-nr.offsetLeft,r=l+ab.offsetWidth;if(r>nr.scrollLeft+nr.clientWidth)nr.scrollLeft=r-nr.clientWidth;else if(l<nr.scrollLeft)nr.scrollLeft=l}}}   // le bandeau d'onglets se fait glisser : sa position est conservée, et l'onglet actif reste visible
+  {const nr=document.getElementById('navRow');if(nr){nr.scrollLeft=nsl;const quitteOrga=window._navPrev!==undefined&&window._navPrev!==tab&&tab!=='admin'&&nsl>0;   // changement de rubrique (hors Orga) : la rangée revient à gauche, Orga se cache
+   window._navPrev=tab;if(quitteOrga)nr.scrollTo({left:0,behavior:'smooth'});else{const ab=[...nr.children].find(b=>b.classList.contains('bg-white'));if(ab){const l=ab.offsetLeft-nr.offsetLeft,r=l+ab.offsetWidth;if(r>nr.scrollLeft+nr.clientWidth)nr.scrollLeft=r-nr.clientWidth;else if(l<nr.scrollLeft)nr.scrollLeft=l}}}}   // le bandeau d'onglets se fait glisser : sa position est conservée, et l'onglet actif reste visible
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
