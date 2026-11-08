@@ -67,7 +67,7 @@
      "R32"
     ],
     [
-     "Nathanael (FPICK)",
+     "Nate (P2R)",
      "R16"
     ],
     [
@@ -257,8 +257,7 @@
  "enCours": {
   "nom": "Pierre-Feuille-Ciseaux",
   "type": "p250",
-  "pf": true,
-  "date": "2026-10-27"
+  "pf": true
  },
  "saison": 2026,
  "aVenir": [
@@ -266,8 +265,7 @@
    "nom": "Blind Test",
    "type": "p500",
    "date": "2026-11-16",
-   "pf": true,
-   "url": "https://tournoi-blindtest.vercel.app/"
+   "pf": true
   }
  ]
 }
