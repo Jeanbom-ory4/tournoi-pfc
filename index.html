@@ -5,7 +5,7 @@
 <title>Master Chifoumi — Édition RSP 2026</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>.navrow{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}.navrow::-webkit-scrollbar{display:none}.navrow .navb{flex:0 0 calc((100% - 24px)/4)}
+<style>.navrow{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:none;overscroll-behavior:none}.navrow::-webkit-scrollbar{display:none}.navrow .navb{flex:0 0 calc((100% - 24px)/4)}
 @keyframes livedot{0%,100%{opacity:1}50%{opacity:.25}}.livedot{display:inline-block;animation:livedot 3.2s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
 
 :root{--bg1:#2e1065;--bg2:#be185d;--card:rgba(255,255,255,.14)}
@@ -284,6 +284,11 @@ topEl.onclick=()=>{   // retour en haut sans défilement visible : la page s'eff
   setTimeout(()=>{window.scrollTo(0,0);b.style.opacity='1';setTimeout(()=>{b.style.transition='';b.style.opacity=''},200)},150);
 };
 document.body.appendChild(topEl);
+// Bandeau d'onglets : pas d'effet élastique aux extrémités (iPhone compris) ; le défilement vertical de la page n'est pas touché
+{let sx=0,sy=0;
+document.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY},{passive:true});
+document.addEventListener('touchmove',e=>{const n=e.target.closest&&e.target.closest('#navRow');if(!n)return;const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<=Math.abs(dy))return;
+  if((dx>0&&n.scrollLeft<=0)||(dx<0&&n.scrollLeft>=n.scrollWidth-n.clientWidth-1))e.preventDefault()},{passive:false});}
 function hintUpdate(){
   const rem=document.documentElement.scrollHeight-(window.scrollY+window.innerHeight);
   const hk=(tab==='jeu'||tab==='tableau'||tab==='apropos'||tab==='calendrier');   // rubriques concernées : Jouer, Tableau et À propos. Visible tant qu'il reste du contenu plus bas (réapparaît donc quand on remonte)
