@@ -277,6 +277,9 @@ hintEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 hintEl.onclick=()=>window.scrollBy({top:Math.round(window.innerHeight*.8),behavior:'smooth'});
 document.body.appendChild(hintEl);
 // Bouton « remonter en haut » : rubriques Tableau et À propos (pages longues), une fois qu'on est descendu
+// Glissement doux du bandeau d'onglets vers la gauche (≈ 0,9 s, départ et arrivée en douceur)
+function glisseNav(nr){const x0=nr.scrollLeft,t0=performance.now(),D=900;const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const step=now=>{const t=Math.min(1,(now-t0)/D);nr.scrollLeft=x0*(1-ease(t));if(t<1&&nr.isConnected)requestAnimationFrame(step)};requestAnimationFrame(step)}
 const topEl=document.createElement('button');topEl.id='topBtn';topEl.type='button';topEl.setAttribute('aria-label','Remonter en haut de la page');
 topEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
 topEl.onclick=()=>{   // retour en haut sans défilement visible : la page s'efface en 0,15 s, saute en haut, puis réapparaît en fondu en 0,15 s
@@ -419,7 +422,7 @@ function render(){
   const nsl=(document.getElementById('navRow')||{}).scrollLeft||0;
   app.innerHTML=nav+souvBar+err+(tab==='jeu'?jeuView():tab==='tableau'?bracketView():tab==='apropos'?aboutView():tab==='calendrier'?calView():adminView());
   {const nr=document.getElementById('navRow');if(nr){nr.scrollLeft=nsl;const quitteOrga=window._navPrev!==undefined&&window._navPrev!==tab&&tab!=='admin'&&nsl>0;   // changement de rubrique (hors Orga) : la rangée revient à gauche, Orga se cache
-   window._navPrev=tab;if(quitteOrga)nr.scrollTo({left:0,behavior:'smooth'});else{const ab=[...nr.children].find(b=>b.classList.contains('bg-white'));if(ab){const l=ab.offsetLeft-nr.offsetLeft,r=l+ab.offsetWidth;if(r>nr.scrollLeft+nr.clientWidth)nr.scrollLeft=r-nr.clientWidth;else if(l<nr.scrollLeft)nr.scrollLeft=l}}}}   // le bandeau d'onglets se fait glisser : sa position est conservée, et l'onglet actif reste visible
+   window._navPrev=tab;if(quitteOrga)glisseNav(nr);else{const ab=[...nr.children].find(b=>b.classList.contains('bg-white'));if(ab){const l=ab.offsetLeft-nr.offsetLeft,r=l+ab.offsetWidth;if(r>nr.scrollLeft+nr.clientWidth)nr.scrollLeft=r-nr.clientWidth;else if(l<nr.scrollLeft)nr.scrollLeft=l}}}}   // le bandeau d'onglets se fait glisser : sa position est conservée, et l'onglet actif reste visible
   if(hadFocus&&$('#pin')){const i=$('#pin');i.focus();i.setSelectionRange(i.value.length,i.value.length)}
   if(tab==='admin')drawQR();
   notifyCheck();
