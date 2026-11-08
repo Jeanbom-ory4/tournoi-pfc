@@ -257,7 +257,8 @@
  "enCours": {
   "nom": "Pierre-Feuille-Ciseaux",
   "type": "p250",
-  "pf": true
+  "pf": true,
+  "date": "2026-10-27"
  },
  "saison": 2026,
  "aVenir": [

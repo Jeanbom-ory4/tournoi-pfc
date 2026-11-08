@@ -377,7 +377,8 @@ function classementView(){
   const parts=(b,noPF)=>[['vainqueur',b.V],['finaliste',b.F],...(noPF?[['demi-finale',b.SF]]:[['3e',b['3']],['4e',b['4']]]),['quart de finale',b.QF],['huitième',b.R16],['seizième',b.R32],['premier tour',b.R1]].filter(x=>x[1]!=null);
   const line=(lab,b,noPF)=>`<p class="mt-2"><b>${lab}</b> : ${parts(b,noPF).map(x=>x[0]+' '+x[1]).join(' · ')}</p>`;
   const ec=CL.enCours&&CL.bareme[CL.enCours.type];
-  const bl=c.tn.filter(t=>CL.bareme[t.type]).map(t=>line(esc(CL.bareme[t.type].label)+' ('+esc(t.nom)+', '+fd(t.date)+')',CL.bareme[t.type],t.pf===false)).join('')+(ec?line(esc(ec.label)+' ('+esc(CL.enCours.nom)+', en cours)',ec,CL.enCours.pf===false):'')+(CL.aVenir||[]).filter(t=>CL.bareme[t.type]).map(t=>line(esc(CL.bareme[t.type].label)+' ('+esc(t.nom)+(t.date?', '+fd(t.date):', à venir')+')',CL.bareme[t.type],t.pf===false)).join('');   // tournois annoncés (« à venir »)
+  const bl=c.tn.filter(t=>CL.bareme[t.type]).map(t=>line(esc(CL.bareme[t.type].label)+' ('+esc(t.nom)+', '+fd(t.date)+')',CL.bareme[t.type],t.pf===false)).join('');
+  const blEc=ec?line(esc(ec.label)+' ('+esc(CL.enCours.nom)+(CL.enCours.date?', '+fd(CL.enCours.date):', en cours')+')',ec,CL.enCours.pf===false):'';   // tournoi en cours, présenté à part ; les tournois à venir sont dans « Calendrier"
   const tabBtn=(k,l)=>`<button onclick="clMode='${k}';render()" class="flex-1 py-2 px-1 text-xs rounded-xl font-bold ${mode===k?'bg-white text-purple-800':'card'}">${l}</button>`;
   const intro=race?`<p class="mb-2 text-sm opacity-90"><b>Course au Master ${c.yr}</b> : seuls les tournois de l'année ${c.yr} comptent, <b>Master Final compris</b> : comme au tennis, ses points entrent dans la course, donc le suspense dure jusqu'à la grande finale. Ce classement <b>repart de zéro chaque 1<sup>er</sup> janvier</b>. Les <b>8 premiers avant le Master</b> (✅) sont qualifiés pour le Master Final. <b>À égalité de points</b>, on départage d'après les points marqués au Grand Chelem, puis au tournoi moyen, puis aux petits tournois.</p>`:`<p class="mb-2 text-sm opacity-90"><b>Classement général</b> : les résultats de tous nos tournois rapportent des points, comme sur le circuit de tennis. Chaque résultat reste valable <b>12 mois</b>, puis il sort du classement : il faut donc <b>défendre ses points</b> en faisant au moins aussi bien l'année suivante, sans quoi on perd des places.</p>`;
   return `<details ${aboutOpen.rank?'open':''} ontoggle="aboutOpen.rank=this.open" class="rounded-xl bg-white/10 p-3 mb-3"><summary class="font-bold cursor-pointer">🏅 Classement annuel</summary>
@@ -388,6 +389,7 @@ function classementView(){
     ${c.last?`<p class="text-xs opacity-80 mb-1">Variation depuis le dernier tournoi : <b>${esc(c.last.nom)}</b> (${fd(c.last.date)}). ▲▼ = places gagnées ou perdues.</p>`:''}
     <div class="mb-2">${c.rows.length?show.map(row).join(''):'<p class="text-sm opacity-90 text-center py-2">Aucun résultat pour cette saison pour le moment.</p>'}</div>
     ${c.rows.length>10?`<div class="text-center mb-2"><button onclick="clAll=!clAll;render()" class="px-3 py-1.5 rounded-xl card text-xs font-bold">${clAll?'Réduire':'Voir tout ('+c.rows.length+' joueurs)'}</button></div>`:''}
+    ${blEc?`<p class="text-xs opacity-80 font-bold">Tournoi en cours :</p><div class="text-xs opacity-80 mt-1 mb-3">${blEc}</div>`:''}
     <p class="text-xs opacity-80 font-bold">Tournois pris en compte :${c.tn.length?'':' <span class="font-normal">aucun pour le moment.</span>'}</p>
     <div class="text-xs opacity-80 mt-1">${bl}</div>
   </details>`;
