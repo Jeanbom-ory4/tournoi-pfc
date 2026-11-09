@@ -282,8 +282,10 @@ function glisseNav(nr){const x0=nr.scrollLeft,t0=performance.now(),D=900;const e
   const step=now=>{const t=Math.min(1,(now-t0)/D);nr.scrollLeft=x0*(1-ease(t));if(t<1&&nr.isConnected)requestAnimationFrame(step)};requestAnimationFrame(step)}
 const topEl=document.createElement('button');topEl.id='topBtn';topEl.type='button';topEl.setAttribute('aria-label','Remonter en haut de la page');
 topEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
-topEl.onclick=()=>{   // retour en haut sans défilement visible : la page s'efface en 0,15 s, saute en haut, puis réapparaît en fondu en 0,15 s
-  const b=document.body;b.style.transition='opacity .15s ease';b.style.opacity='0';
+topEl.onclick=()=>{
+  const max=document.documentElement.scrollHeight-window.innerHeight;
+  if(max>0&&window.scrollY/max<=.5){window.scrollBy({top:-Math.round(window.innerHeight*.8),behavior:'smooth'});return}   // moins de la moitié de la page : défilement doux vers le haut, comme le bouton « descendre »
+  const b=document.body;b.style.transition='opacity .15s ease';b.style.opacity='0';   // plus de la moitié : la page s'efface en 0,15 s, saute en haut, puis réapparaît en fondu en 0,15 s
   setTimeout(()=>{window.scrollTo(0,0);b.style.opacity='1';setTimeout(()=>{b.style.transition='';b.style.opacity=''},200)},150);
 };
 document.body.appendChild(topEl);
