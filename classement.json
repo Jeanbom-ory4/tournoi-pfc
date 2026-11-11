@@ -252,14 +252,273 @@
     ]
    ],
    "pf": false
+  },
+  {
+   "id": "pfc-2026-10",
+   "nom": "Pierre-Feuille-Ciseaux",
+   "date": "2026-10-27",
+   "type": "p250",
+   "res": [
+    [
+     "Tatian (STOW)",
+     "R1"
+    ],
+    [
+     "Serge (PICK)",
+     "R1"
+    ],
+    [
+     "Felix (STOW)",
+     "R32"
+    ],
+    [
+     "Marie (PK-SN)",
+     "R1"
+    ],
+    [
+     "Soumaila (PICK-MVX)",
+     "R1"
+    ],
+    [
+     "Greg (SHIP)",
+     "QF"
+    ],
+    [
+     "Didier (STOW)",
+     "R16"
+    ],
+    [
+     "Cedric (P2R)",
+     "R1"
+    ],
+    [
+     "Sarah (STOW-FUD)",
+     "R1"
+    ],
+    [
+     "Sully (P2R)",
+     "4"
+    ],
+    [
+     "Celine (FPICK)",
+     "R1"
+    ],
+    [
+     "Romain (STOW)",
+     "R32"
+    ],
+    [
+     "Arnaud (AFM)",
+     "R1"
+    ],
+    [
+     "Ludgy (PICK-MVX)",
+     "R16"
+    ],
+    [
+     "Naomie (PICK)",
+     "R1"
+    ],
+    [
+     "Nate (P2R)",
+     "R1"
+    ],
+    [
+     "Francis (PICK)",
+     "R32"
+    ],
+    [
+     "Yero (STOW)",
+     "R1"
+    ],
+    [
+     "Jordy (FPICK)",
+     "R1"
+    ],
+    [
+     "Marine (STOW-FUD)",
+     "R32"
+    ],
+    [
+     "Badr (JAMB)",
+     "F"
+    ],
+    [
+     "Hugues (STOW)",
+     "R32"
+    ],
+    [
+     "Benjamin (STOW)",
+     "R1"
+    ],
+    [
+     "Augustin (FPICK)",
+     "R32"
+    ],
+    [
+     "Hicham (ICQA)",
+     "R32"
+    ],
+    [
+     "Erwan (AFM)",
+     "R32"
+    ],
+    [
+     "Sukir (P2R)",
+     "R32"
+    ],
+    [
+     "Kevin (STOW)",
+     "R1"
+    ],
+    [
+     "Sonia (STOW)",
+     "R1"
+    ],
+    [
+     "Cedric (PICK)",
+     "R32"
+    ],
+    [
+     "Estelle (RME)",
+     "R16"
+    ],
+    [
+     "Devon (AFM)",
+     "R1"
+    ],
+    [
+     "Kellian (ICQA)",
+     "R1"
+    ],
+    [
+     "Laila (AFM)",
+     "R32"
+    ],
+    [
+     "Jeremie (P2R)",
+     "R1"
+    ],
+    [
+     "Oumou (ICQA)",
+     "R32"
+    ],
+    [
+     "William (PICK)",
+     "R32"
+    ],
+    [
+     "Teresa (STOW)",
+     "V"
+    ],
+    [
+     "Yanis (P2R)",
+     "R32"
+    ],
+    [
+     "Oyunbat (P2R)",
+     "R16"
+    ],
+    [
+     "Malik (PICK)",
+     "R1"
+    ],
+    [
+     "Farid (ICQA)",
+     "R1"
+    ],
+    [
+     "Jean-Boris (PICK)",
+     "R1"
+    ],
+    [
+     "Lucile (RME)",
+     "R1"
+    ],
+    [
+     "Elizette (P2R)",
+     "R16"
+    ],
+    [
+     "Sofiane (STOW)",
+     "R32"
+    ],
+    [
+     "Damien (P2R)",
+     "QF"
+    ],
+    [
+     "Massyl (ICQA)",
+     "R1"
+    ],
+    [
+     "Angel (ICQA)",
+     "R16"
+    ],
+    [
+     "Brian (STOW)",
+     "R1"
+    ],
+    [
+     "Yann (PICK)",
+     "R16"
+    ],
+    [
+     "Desire (ICQA)",
+     "R1"
+    ],
+    [
+     "Cedric (AFM)",
+     "R1"
+    ],
+    [
+     "Umberto (PK-SN)",
+     "3"
+    ],
+    [
+     "Sabrina (ICQA)",
+     "R1"
+    ],
+    [
+     "Saoussan (AFE)",
+     "R16"
+    ],
+    [
+     "Irham (STOW)",
+     "QF"
+    ],
+    [
+     "Fouzia (ICQA)",
+     "R1"
+    ],
+    [
+     "Francis (ICQA)",
+     "R1"
+    ],
+    [
+     "Camille (P2R)",
+     "R1"
+    ],
+    [
+     "Jessica (ICQA)",
+     "R1"
+    ],
+    [
+     "Emmanuel (STOW)",
+     "QF"
+    ],
+    [
+     "Sylvie (FPICK)",
+     "R1"
+    ],
+    [
+     "Louis (ICQA)",
+     "R32"
+    ]
+   ],
+   "pf": true
   }
  ],
- "enCours": {
-  "nom": "Pierre-Feuille-Ciseaux",
-  "type": "p250",
-  "pf": true,
-  "date": "2026-10-27"
- },
  "saison": 2026,
  "aVenir": [
   {
