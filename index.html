@@ -391,11 +391,13 @@ function classementView(){
   const line=(lab,b,noPF)=>`<p class="mt-2"><b>${lab}</b> : ${parts(b,noPF).map(x=>x[0]+' '+x[1]).join(' · ')}</p>`;
   const ec=CL.enCours&&CL.bareme[CL.enCours.type];
   const bl=c.tn.filter(t=>CL.bareme[t.type]).map(t=>line(esc(CL.bareme[t.type].label)+' ('+esc(t.nom)+', '+fd(t.date)+')',CL.bareme[t.type],t.pf===false)).join('');
+  const av=(CL.aVenir||[]).filter(t=>CL.bareme[t.type]);
+  const avl=av.map(t=>line(esc(CL.bareme[t.type].label)+' ('+esc(t.nom)+(t.date?', '+fd(t.date):', à venir')+')',CL.bareme[t.type],t.pf===false)).join('');
   const blEc=ec?line(esc(ec.label)+' ('+esc(CL.enCours.nom)+(CL.enCours.date?', '+fd(CL.enCours.date):', en cours')+')',ec,CL.enCours.pf===false):'';   // tournoi en cours, présenté à part ; les tournois à venir sont dans « Calendrier"
   const tabBtn=(k,l)=>`<button onclick="clMode='${k}';render()" class="flex-1 py-2 px-1 text-xs rounded-xl font-bold ${mode===k?'bg-white text-purple-800':'card'}">${l}</button>`;
   const intro=race?`<div class="mb-2 text-sm opacity-90"><p class="mb-1"><b>Course au Master ${c.yr}</b></p><ul style="list-style:disc;padding-left:1.2rem"><li class="mb-1"><b>Remise à zéro :</b> le classement repart de zéro chaque 1<sup>er</sup> janvier et cumule tous les tournois de l'année (Master Final compris pour un suspense total jusqu'au bout).</li><li class="mb-1"><b>La qualification :</b> les 8 premiers à l'issue de la saison régulière gagnent leur place pour le Master Final (✅).</li><li><b>En cas d'égalité :</b> le départage se fait dans cet ordre précis :<ol style="list-style:decimal;padding-left:1.2rem;margin-top:2px"><li>Points marqués en Grand Chelem</li><li>Points en tournoi moyen</li><li>Points aux petits tournois</li></ol></li></ul></div>`:`<p class="mb-2 text-sm opacity-90"><b>Classement général</b> : les résultats de tous nos tournois rapportent des points, comme sur le circuit de tennis. Chaque résultat reste valable <b>12 mois</b>, puis il sort du classement : il faut donc <b>défendre ses points</b> en faisant au moins aussi bien l'année suivante, sans quoi on perd des places.</p>`;
-  return `<details ${aboutOpen.rank?'open':''} ontoggle="aboutOpen.rank=this.open" class="rounded-xl bg-white/10 p-3 mb-3"><summary class="font-bold cursor-pointer">🏅 Classement annuel</summary>
-    <div class="flex gap-2 mt-3 mb-2">${tabBtn('g','🌍 Classement général')}${tabBtn('s','🏁 Course au Master')}</div>
+  return `<div class="rounded-xl bg-white/10 p-3 mb-3">
+    <div class="flex gap-2 mb-2">${tabBtn('g','🌍 Classement général')}${tabBtn('s','🏁 Course au Master')}</div>
     ${intro}
     <p class="mb-2 text-sm rounded-xl bg-yellow-300/20 p-2">👑 Les 8 premiers de la course se retrouvent au <b>Master Final</b> (voir plus bas) : son vainqueur devient <b>Maître des Maîtres</b>. À la fin de l'année, une fois le Master Final joué, le joueur en tête de la course (ses points compris) reçoit le titre de <b>Grand Maître des Tournois</b>.</p>
     ${!race&&c.rows.length?(()=>{const n1=c.rows.filter(x=>x.r===1);return `<div class="mb-2 p-2 rounded-xl text-center" style="background:linear-gradient(90deg,rgba(56,189,248,.25),rgba(52,211,153,.25));border:1px solid rgba(255,255,255,.3)"><div class="text-xs font-bold opacity-90">🌍 Numéro 1 mondial de la pause</div><div class="font-black">${n1.map(x=>esc(x.n)).join(' & ')}</div></div>`})():''}
@@ -403,9 +405,10 @@ function classementView(){
     <div class="mb-2">${c.rows.length?show.map(row).join(''):'<p class="text-sm opacity-90 text-center py-2">Aucun résultat pour cette saison pour le moment.</p>'}</div>
     ${c.rows.length>10?`<div class="text-center mb-2"><button onclick="clAll=!clAll;render()" class="px-3 py-1.5 rounded-xl card text-xs font-bold">${clAll?'Réduire':'Voir tout ('+c.rows.length+' joueurs)'}</button></div>`:''}
     ${blEc?`<p class="text-xs opacity-80 font-bold">Tournoi en cours :</p><div class="text-xs opacity-80 mt-1 mb-3">${blEc}</div>`:''}
+    ${av.length?`<p class="text-xs opacity-80 font-bold">Tournoi${av.length>1?'s':''} à venir :</p><div class="text-xs opacity-80 mt-1 mb-3">${avl}</div>`:''}
     <p class="text-xs opacity-80 font-bold">Tournois pris en compte :${c.tn.length?'':' <span class="font-normal">aucun pour le moment.</span>'}</p>
     <div class="text-xs opacity-80 mt-1">${bl}</div>
-  </details>`;
+  </div>`;
 }
 
 function render(){
@@ -416,7 +419,7 @@ function render(){
     const cid=me(),cf=S.matches[mk(S.cfg.rounds-1,0)],ck='pfc_cgo_'+(S.cfg.tid||'')+'_'+cid;
     if(cid&&cf&&cf.w===cid&&ls.get(ck)!=='1'){ls.set(ck,'1');if(tab!=='jeu'){tab='jeu';watch=null;bigBoard=false;window.scrollTo(0,0)}}
   }
-  const tabs=souv?[['tableau','🏆 Tableau'],['calendrier','🗓️ Calendrier'],['apropos','ℹ️ À propos']]:[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['calendrier','🗓️ Calendrier'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
+  const tabs=souv?[['tableau','🏆 Tableau'],['calendrier','🏅 Classement'],['apropos','ℹ️ À propos']]:[['jeu','🎮 Jouer'],['tableau','🏆 Tableau'],['calendrier','🏅 Classement'],['apropos','ℹ️ À propos'],['admin','⚙️ Orga']];
   const souvBar=souv?wrap('<p class="text-center font-bold">🕰 Souvenir du tournoi</p><p class="text-center text-sm mt-1 opacity-90">Le tournoi est terminé : voici le tableau final et tous les résultats.</p>'):'';
   const nav=`<div id="navRow" class="navrow flex gap-2 mb-3">${tabs.map(t=>`<button onclick="setTab('${t[0]}')" class="${tabs.length>4?'navb ':''}flex-1 py-2 rounded-2xl font-bold ${tab===t[0]?'bg-white text-purple-800':'card'}" style="font-size:11px;line-height:1.15;padding-left:2px;padding-right:2px"><span class="block" style="font-size:18px;line-height:1;margin-bottom:2px">${t[1].split(' ')[0]}</span>${t[1].slice(t[1].indexOf(' ')+1)}${t[0]==='jeu'&&tab!=='jeu'&&myTurn()?' <span class="tdot">🔴</span>':''}</button>`).join('')}</div>`;
   const err=loadErr?wrap('<p class="text-center font-bold">⚠️ Serveur injoignable</p><p class="text-center text-sm mt-1 break-words">'+esc(loadErr)+'</p>'):'';
@@ -1113,10 +1116,10 @@ function matchView(k){
     <p class="text-xs text-center mt-3 opacity-70">👁 Mode spectateur : un coup en attente reste secret tant que les deux joueurs n'ont pas joué.</p>`);
 }
 
-// Rubrique « Calendrier » : tournois passés (classement.json), en cours et à venir (champ « aVenir », avec lien d'inscription facultatif « url »)
+// Rubrique « Classement » (onglet calendrier) : classement annuel, puis calendrier : tournois passés (classement.json), en cours et à venir (champ « aVenir », avec lien d'inscription facultatif « url »)
 function selfUrl(u){try{return new URL(u,location.href).host===location.host}catch(e){return false}}
 function calView(){
-  if(!CL)return wrap('<h2 class="text-xl font-black text-center mb-3">🗓️ Calendrier</h2><p class="text-center text-sm opacity-90">Le calendrier n\'est pas disponible pour le moment.</p>');
+  if(!CL)return wrap('<h2 class="text-xl font-black text-center mb-3">🏅 Classement</h2><p class="text-center text-sm opacity-90">Le classement n\'est pas disponible pour le moment.</p>');
   const fdt=d=>d?new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'';
   const bl=t=>CL.bareme[t]||{},pts=t=>bl(t).V?`<span class="opacity-80"> · ${bl(t).label} · ${bl(t).V} pts au vainqueur</span>`:'';
   const card=(bg,inner)=>`<div class="rounded-xl p-3 mb-2" style="background:${bg}">${inner}</div>`;
@@ -1124,8 +1127,36 @@ function calView(){
   const ec=CL.enCours?card('rgba(52,211,153,.28)',`<p class="font-bold" style="line-height:1.9"><span class="livedot">🔴</span> ${esc(CL.enCours.nom)} <span class="text-xs font-bold rounded-full px-2 py-0.5" style="background:#fff;color:#065f46;margin-left:6px;white-space:nowrap;display:inline-block">EN COURS</span></p><p class="text-xs mt-0.5">${CL.enCours.date?'🗓️ '+fdt(CL.enCours.date)+pts(CL.enCours.type):(bl(CL.enCours.type).label?bl(CL.enCours.type).label+' · '+bl(CL.enCours.type).V+' pts au vainqueur':'')}</p>`):'';
   const av=(CL.aVenir||[]).slice().sort((a,b)=>(a.date||'9').localeCompare(b.date||'9')).map(t=>card('rgba(56,189,248,.28)',`<p class="font-bold">⏳ ${esc(t.nom)}</p><p class="text-xs mt-0.5">${t.date?'🗓️ '+fdt(t.date):'Date à venir'}${pts(t.type)}</p>${t.url&&!selfUrl(t.url)?`<a href="${esc(t.url)}" style="display:inline-block;margin-top:10px" class="px-4 py-2 rounded-xl bg-white text-purple-800 font-bold text-sm">✍️ S'inscrire</a>`:''}`)).join('');
   const pa=CL.tournois.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(t=>{const w=(t.res||[]).filter(r=>r[1]==='V').map(r=>esc(r[0])).join(' & ');return card('rgba(255,255,255,.12)',`<p class="font-bold">✅ ${esc(t.nom)}</p><p class="text-xs mt-0.5">🗓️ ${fdt(t.date)}${pts(t.type)}</p>${w?`<p class="text-sm mt-1">🏆 Vainqueur : <b>${w}</b></p>`:''}`)}).join('');
-  return wrap('<h2 class="text-xl font-black text-center mb-1">🗓️ Calendrier</h2><p class="text-center text-sm opacity-90 mb-1">Tous les tournois de la saison '+(CL.saison||'')+' : passés, en cours et à venir.</p>'+sec('Passés',pa)+sec('En cours',ec)+sec('À venir',av));
+  return wrap('<h2 class="text-xl font-black text-center mb-3">🏅 Classement</h2>'+classementView()+'<h3 class="text-lg font-black text-center mt-5 mb-1">🗓️ Calendrier de la saison</h3><p class="text-center text-sm opacity-90 mb-1">Tous les tournois de la saison '+(CL.saison||'')+' : passés, en cours et à venir.</p>'+sec('Passés',pa)+sec('En cours',ec)+sec('À venir',av)+'<div class="mt-4">'+calMaster()+'</div>');
 }
+
+// Règles du Master Final et des titres (en bas de la rubrique Classement)
+function calMaster(){return `  <details ${aboutOpen.master?'open':''} ontoggle="aboutOpen.master=this.open" class="rounded-xl bg-white/10 p-3 mb-3"><summary class="font-bold cursor-pointer">👑 Le Master Final &amp; le titre suprême</summary>
+    <p class="mt-3 mb-3">Chaque année compte 5 grands rendez-vous : deux <b>petits tournois</b> (250 points chacun), un <b>tournoi moyen</b> (500 points), le <b>Grand Chelem</b> (1 000 points) et, pour finir, le <b>Master Final</b> (le Tournoi des Maîtres, 750 points), réservé exclusivement aux <b>8 meilleurs joueurs</b> de la <b>course au Master</b> de l'année.</p>
+    <p class="font-bold mb-1">1. La qualification : la course 🏁</p>
+    <p class="mb-2">Tout au long de l'année, chaque tournoi (petits, moyen et Grand Chelem) te permet d'engranger de précieux points au classement général.</p>
+    <ul class="list-disc pl-5 space-y-1 mb-3">
+      <li><b>Objectif :</b> terminer dans le <b>Top 8</b> de la <b>course au Master</b>, le classement de la saison, qui repart de zéro chaque 1<sup>er</sup> janvier.</li>
+      <li><b>Égalité :</b> à égalité de points, on départage d'après les points marqués au Grand Chelem, puis au tournoi moyen, puis aux petits tournois.</li>
+      <li><b>Le rôle de la saison régulière :</b> c'est elle qui t'ouvre les portes du Tournoi des Maîtres. Plus tu marques de points lors des tournois précédents, plus tu assures ta qualification pour le Master Final de fin d'année !</li>
+    </ul>
+    <p class="font-bold mb-1">2. Le jour J : tout se joue sur le terrain ! ⚔️</p>
+    <p class="mb-2">Une fois qualifié pour le Master Final, les compteurs de la saison se figent pour lancer la compétition ultime entre les 8 meilleurs.</p>
+    <ul class="list-disc pl-5 space-y-1 mb-3" style="list-style:disc;padding-left:1.2rem">
+      <li><b>Le bonus du Master :</b> le vainqueur empoche 750 points, <b>ajoutés à la course de l'année</b>. Le suspense reste total jusqu'au bout !</li>
+      <li><b>La défense des points :</b> ces points entrent aussi dans le <b>classement général</b> glissant sur 12 mois. L'année prochaine, il faudra les <b>défendre</b> pour conserver sa place.</li>
+    </ul>
+    <p class="mb-3"><b>La règle d'or :</b> peu importe que tu aies terminé 1<sup>er</sup> ou 8<sup>e</sup> de la saison régulière, une fois le Master Final lancé, le vainqueur de la grande finale remporte le <b>titre suprême</b> de <b>Maître des Maîtres</b> ! 🏆</p>
+    <p class="font-bold mb-1">3. Les titres 👑</p>
+    <ul class="list-disc pl-5 space-y-1 mb-3">
+      <li><b>Maître des Maîtres</b> : le vainqueur du Master Final.</li>
+      <li><b>Grand Maître des Tournois</b> : le joueur en tête de la course au Master à la fin de l'année, une fois le Master Final joué (ses points compris).</li>
+      <li><b>Numéro 1 mondial de la pause</b> 🌍 : le joueur en tête du <b>classement général</b> (12 mois glissants). Ce titre peut changer de propriétaire après chaque tournoi : à toi de le décrocher, puis de le défendre !</li>
+      <li><b>Légende absolue de la pause</b> 🌟 : si le n°1 de la course remporte aussi le Master Final, il repart avec tous les honneurs : il cumule les deux titres et devient une légende absolue de la pause !</li>
+    </ul>
+    <p class="italic opacity-95">La régularité te permet d'accéder au Tournoi des Maîtres, mais seul l'exploit du jour J permet de soulever le trophée final.</p>
+  </details>
+`}
 
 function aboutView(){
   return wrap(`<h2 class="text-xl font-black text-center mb-3">À propos</h2>
@@ -1151,32 +1182,6 @@ function aboutView(){
     <p class="mb-3">Venu de Chine, le jeu arrive au Japon (vers le XVIIᵉ siècle selon plusieurs sources), où l'on pratique de nombreux jeux de poing appelés « sansukumi-ken » : trois signes qui se battent en cercle, comme dans notre jeu. C'est au Japon que ces jeux évoluent vers la version moderne que nous connaissons aujourd'hui : le Janken (avec la Pierre, la Feuille et les Ciseaux). Le mot français Chifoumi vient d'ailleurs très probablement du comptage japonais (Hi-Fu-Mi, 1-2-3) !</p>
     <p class="font-bold mb-1">3. La conquête du monde</p>
     <p>Au XXᵉ siècle, le jeu quitte l'Asie pour l'Occident et se diffuse à travers la planète. Malgré sa simplicité apparente, il est devenu un sujet d'étude en théorie des jeux et en psychologie : car au-delà du hasard, gagner au Chifoumi repose sur l'observation, le rythme et la lecture de son adversaire.</p>
-  </details>
-  ${classementView()}
-  <details ${aboutOpen.master?'open':''} ontoggle="aboutOpen.master=this.open" class="rounded-xl bg-white/10 p-3 mb-3"><summary class="font-bold cursor-pointer">👑 Le Master Final &amp; le titre suprême</summary>
-    <p class="mt-3 mb-3">Chaque année compte 5 grands rendez-vous : deux <b>petits tournois</b> (250 points chacun), un <b>tournoi moyen</b> (500 points), le <b>Grand Chelem</b> (1 000 points) et, pour finir, le <b>Master Final</b> (le Tournoi des Maîtres, 750 points), réservé exclusivement aux <b>8 meilleurs joueurs</b> de la <b>course au Master</b> de l'année.</p>
-    <p class="font-bold mb-1">1. La qualification : la course 🏁</p>
-    <p class="mb-2">Tout au long de l'année, chaque tournoi (petits, moyen et Grand Chelem) te permet d'engranger de précieux points au classement général.</p>
-    <ul class="list-disc pl-5 space-y-1 mb-3">
-      <li><b>Objectif :</b> terminer dans le <b>Top 8</b> de la <b>course au Master</b>, le classement de la saison, qui repart de zéro chaque 1<sup>er</sup> janvier.</li>
-      <li><b>Égalité :</b> à égalité de points, on départage d'après les points marqués au Grand Chelem, puis au tournoi moyen, puis aux petits tournois.</li>
-      <li><b>Le rôle de la saison régulière :</b> c'est elle qui t'ouvre les portes du Tournoi des Maîtres. Plus tu marques de points lors des tournois précédents, plus tu assures ta qualification pour le Master Final de fin d'année !</li>
-    </ul>
-    <p class="font-bold mb-1">2. Le jour J : tout se joue sur le terrain ! ⚔️</p>
-    <p class="mb-2">Une fois qualifié pour le Master Final, les compteurs de la saison se figent pour lancer la compétition ultime entre les 8 meilleurs.</p>
-    <ul class="list-disc pl-5 space-y-1 mb-3" style="list-style:disc;padding-left:1.2rem">
-      <li><b>Le bonus du Master :</b> le vainqueur empoche 750 points, <b>ajoutés à la course de l'année</b>. Le suspense reste total jusqu'au bout !</li>
-      <li><b>La défense des points :</b> ces points entrent aussi dans le <b>classement général</b> glissant sur 12 mois. L'année prochaine, il faudra les <b>défendre</b> pour conserver sa place.</li>
-    </ul>
-    <p class="mb-3"><b>La règle d'or :</b> peu importe que tu aies terminé 1<sup>er</sup> ou 8<sup>e</sup> de la saison régulière, une fois le Master Final lancé, le vainqueur de la grande finale remporte le <b>titre suprême</b> de <b>Maître des Maîtres</b> ! 🏆</p>
-    <p class="font-bold mb-1">3. Les titres 👑</p>
-    <ul class="list-disc pl-5 space-y-1 mb-3">
-      <li><b>Maître des Maîtres</b> : le vainqueur du Master Final.</li>
-      <li><b>Grand Maître des Tournois</b> : le joueur en tête de la course au Master à la fin de l'année, une fois le Master Final joué (ses points compris).</li>
-      <li><b>Numéro 1 mondial de la pause</b> 🌍 : le joueur en tête du <b>classement général</b> (12 mois glissants). Ce titre peut changer de propriétaire après chaque tournoi : à toi de le décrocher, puis de le défendre !</li>
-      <li><b>Légende absolue de la pause</b> 🌟 : si le n°1 de la course remporte aussi le Master Final, il repart avec tous les honneurs : il cumule les deux titres et devient une légende absolue de la pause !</li>
-    </ul>
-    <p class="italic opacity-95">La régularité te permet d'accéder au Tournoi des Maîtres, mais seul l'exploit du jour J permet de soulever le trophée final.</p>
   </details>
   <p class="font-semibold text-center">Bons matchs et que le/la meilleur(e) gagne !</p>${me()?`<div class="text-center mt-4"><button onclick="showIntro()" class="text-sm underline opacity-90">🎬 Revoir l'introduction</button></div>`:''}`);
 }
